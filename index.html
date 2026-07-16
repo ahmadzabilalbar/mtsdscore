@@ -18,6 +18,9 @@
     
     <!-- Chart.js via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- html2canvas via CDN for PNG exports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <!-- Local Static Compiled Data -->
     <script src="data.js"></script>
@@ -927,6 +930,7 @@
             border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: flex-end;
+            flex-wrap: wrap;
             gap: 12px;
             background: rgba(17, 24, 39, 0.95);
             position: sticky;
@@ -960,10 +964,55 @@
             border: 1px solid var(--primary);
             color: white;
             box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            gap: 0;
         }
 
         .btn-modal-print:hover {
             background: var(--primary-dark);
+        }
+
+        .btn-modal-html {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            color: var(--success);
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            gap: 0;
+        }
+
+        .btn-modal-html:hover {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .btn-modal-png {
+            background: rgba(6, 182, 212, 0.1);
+            border: 1px solid rgba(6, 182, 212, 0.25);
+            color: var(--color-b);
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            gap: 0;
+        }
+
+        .btn-modal-png:hover {
+            background: var(--color-b);
+            color: white;
+            border-color: var(--color-b);
         }
 
         /* Empty State */
@@ -1813,11 +1862,17 @@
 
             <!-- Modal Footer -->
             <div class="modal-footer">
-                <button class="btn-modal btn-modal-close" id="modalCloseBtn">
+                <button class="btn-modal btn-modal-close" id="modalCloseBtn" style="margin-right: auto;">
                     <i data-lucide="corner-up-left" style="width: 16px; height: 16px;"></i> Kembali
                 </button>
-                <button class="btn-modal btn-modal-print" id="modalPrintBtn">
-                    <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Cetak Slip Keputusan
+                <button class="btn-modal btn-modal-html" id="modalExportHtmlBtn" title="Eksport HTML" aria-label="Eksport HTML">
+                    <i data-lucide="file-code" style="width: 16px; height: 16px;"></i>
+                </button>
+                <button class="btn-modal btn-modal-png" id="modalExportPngBtn" title="Eksport PNG" aria-label="Eksport PNG">
+                    <i data-lucide="image" style="width: 16px; height: 16px;"></i>
+                </button>
+                <button class="btn-modal btn-modal-print" id="modalPrintBtn" title="Cetak Slip Keputusan" aria-label="Cetak Slip Keputusan">
+                    <i data-lucide="printer" style="width: 16px; height: 16px;"></i>
                 </button>
             </div>
         </div>
@@ -1926,6 +1981,7 @@
             },
             activeTab: 'rankingsTab',
             theme: 'dark',
+            activeStudent: null,
             charts: {
                 radar: null,
                 bar: null,
@@ -2453,6 +2509,20 @@
 
             // Print hook
             document.getElementById('modalPrintBtn').addEventListener('click', printReportCard);
+
+            // Export HTML hook
+            document.getElementById('modalExportHtmlBtn').addEventListener('click', () => {
+                if (appState.activeStudent) {
+                    exportStudentAsHtml(appState.activeStudent);
+                }
+            });
+
+            // Export PNG hook
+            document.getElementById('modalExportPngBtn').addEventListener('click', () => {
+                if (appState.activeStudent) {
+                    exportStudentAsPng(appState.activeStudent);
+                }
+            });
 
             // Grading Modal Hooks
             const gradingModal = document.getElementById('gradingModal');
@@ -3208,6 +3278,9 @@
 
         // Open Student Performance Modal
         function openStudentDetailModal(student) {
+            // Save active student in state
+            appState.activeStudent = student;
+
             // Compute student's details in filtered list
             const modal = document.getElementById('studentDetailModal');
             
@@ -3473,6 +3546,408 @@
 
             // Trigger window print
             window.print();
+        }
+
+        // Export student results slip as a standalone styled HTML file
+        function exportStudentAsHtml(student) {
+            let subjectRowsHtml = '';
+            Object.keys(student.scores).forEach(sub => {
+                const scoreVal = student.scores[sub];
+                const score = (scoreVal !== null && scoreVal !== '') ? scoreVal : '-';
+                
+                let grade = '-';
+                let gradeClass = '';
+                let statusText = '-';
+                let statusClass = '';
+
+                if (score !== '-') {
+                    const numScore = parseFloat(score);
+                    if (numScore >= 85) { grade = 'A'; gradeClass = 'grade-a'; }
+                    else if (numScore >= 70) { grade = 'B'; gradeClass = 'grade-b'; }
+                    else if (numScore >= 60) { grade = 'C'; gradeClass = 'grade-c'; }
+                    else if (numScore >= 50) { grade = 'D'; gradeClass = 'grade-d'; }
+                    else if (numScore >= 40) { grade = 'E'; gradeClass = 'grade-e'; }
+                    else { grade = 'F'; gradeClass = 'grade-f'; }
+
+                    statusText = numScore >= 40 ? 'Lulus' : 'Gagal';
+                    statusClass = numScore >= 40 ? 'status-pass' : 'status-fail';
+                }
+
+                const subFullName = subjectCodeMap[sub] || sub;
+                subjectRowsHtml += `
+                    <tr>
+                        <td style="font-weight: 700; color: #4f46e5;">${escapeHtml(sub)}</td>
+                        <td>${escapeHtml(subFullName)}</td>
+                        <td style="text-align: center; font-weight: 700;">${escapeHtml(score)}</td>
+                        <td style="text-align: center;"><span class="grade-badge ${gradeClass}">${escapeHtml(grade)}</span></td>
+                        <td style="text-align: center; font-weight: 600;" class="${statusClass}">${escapeHtml(statusText)}</td>
+                    </tr>
+                `;
+            });
+
+            let gradesSummaryHtml = '';
+            const gCounts = student.grades_count;
+            Object.keys(gCounts).forEach(gKey => {
+                const count = gCounts[gKey];
+                gradesSummaryHtml += `
+                    <div class="grade-summary-box grade-${gKey.toLowerCase()}">
+                        <div class="grade-summary-label">${gKey}</div>
+                        <div class="grade-summary-value">${count}</div>
+                    </div>
+                `;
+            });
+
+            const htmlContent = `<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slip Keputusan MTSD - ${escapeHtml(student.name)}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 30px 15px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            border-bottom: 3px double #0f172a;
+            padding-bottom: 16px;
+        }
+        .header h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #1e3a8a;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            font-size: 0.85rem;
+            color: #475569;
+            margin-top: 4px;
+        }
+        .header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-top: 12px;
+            text-decoration: underline;
+            color: #0f172a;
+        }
+        .profile-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            background: #f8fafc;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .profile-table td {
+            padding: 10px 14px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.85rem;
+        }
+        .profile-table tr:last-child td {
+            border-bottom: none;
+        }
+        .profile-label {
+            font-weight: 700;
+            color: #475569;
+            width: 30%;
+        }
+        .profile-value {
+            color: #0f172a;
+            font-weight: 500;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .stat-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #4f46e5;
+            margin-top: 4px;
+        }
+        table.results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+        }
+        table.results-table th {
+            background: #f1f5f9;
+            padding: 10px 12px;
+            font-weight: 700;
+            color: #334155;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            border-bottom: 2px solid #cbd5e1;
+            text-align: left;
+        }
+        table.results-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .grade-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-weight: 700;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            text-align: center;
+            min-width: 24px;
+        }
+        .grade-a { color: #065f46; background: #d1fae5; border: 1px solid #10b981; }
+        .grade-b { color: #155e75; background: #ecfeff; border: 1px solid #06b6d4; }
+        .grade-c { color: #92400e; background: #fef3c7; border: 1px solid #f59e0b; }
+        .grade-d { color: #9a3412; background: #ffedd5; border: 1px solid #d97706; }
+        .grade-e { color: #c2410c; background: #fff7ed; border: 1px solid #f97316; }
+        .grade-f { color: #991b1b; background: #fee2e2; border: 1px solid #ef4444; }
+        .status-pass { color: #10b981; font-weight: 700; }
+        .status-fail { color: #ef4444; font-weight: 700; }
+        .grade-summary-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .grade-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+        .grade-summary-box {
+            border: 1px solid #e2e8f0;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .grade-summary-label {
+            font-weight: 800;
+            font-size: 0.75rem;
+        }
+        .grade-summary-value {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .footer-note {
+            margin-top: 30px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: center;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 16px;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MAAHAD TAHFIZ SAINS DARUL AMAN (MTSD)</h1>
+            <p>Taman Tunku Sarina, 06000 Jitra, Kedah Darul Aman</p>
+            <h2>SLIP KEPUTUSAN PEPERIKSAAN</h2>
+        </div>
+
+        <table class="profile-table">
+            <tr>
+                <td class="profile-label">Nama Pelajar</td>
+                <td class="profile-value">${escapeHtml(student.name)}</td>
+            </tr>
+            <tr>
+                <td class="profile-label">Tingkatan</td>
+                <td class="profile-value">Tingkatan ${escapeHtml(student.form.replace('F', ''))}</td>
+            </tr>
+            <tr>
+                <td class="profile-label">Kohort / Tahun</td>
+                <td class="profile-value">KOHORT ${escapeHtml(student.batch)}</td>
+            </tr>
+            <tr>
+                <td class="profile-label">Jantina</td>
+                <td class="profile-value">${student.gender === 'L' ? 'LELAKI' : 'PEREMPUAN'}</td>
+            </tr>
+            <tr>
+                <td class="profile-label">Peperiksaan</td>
+                <td class="profile-value">${escapeHtml(getExamLabel(student.exam)).toUpperCase()}</td>
+            </tr>
+        </table>
+
+        <div class="stats-grid">
+            <div class="stat-box">
+                <div class="stat-label">Kedudukan</div>
+                <div class="stat-value">#${student.calculatedRank}</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Purata Markah</div>
+                <div class="stat-value">${student.average.toFixed(2)}%</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Gred Purata (GPP)</div>
+                <div class="stat-value">${student.gpp.toFixed(2)}</div>
+            </div>
+        </div>
+
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">Kod</th>
+                    <th style="width: 50%;">Mata Pelajaran</th>
+                    <th style="width: 15%; text-align: center;">Markah</th>
+                    <th style="width: 10%; text-align: center;">Gred</th>
+                    <th style="width: 10%; text-align: center;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${subjectRowsHtml}
+            </tbody>
+        </table>
+
+        <div class="grade-summary">
+            <div class="grade-summary-title">Ringkasan Gred Diperolehi</div>
+            <div class="grade-summary-grid">
+                ${gradesSummaryHtml}
+            </div>
+        </div>
+
+        <div class="footer-note">
+            Sistem Analisis Keputusan Peperiksaan MTSD SCORE. Dijana secara automatik pada ${new Date().toLocaleDateString('ms-MY')}.
+        </div>
+    </div>
+</body>
+</html>`;
+
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Slip_MTSD_${student.name.trim().replace(/\s+/g, '_')}_${getExamLabel(student.exam)}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Export student results slip as a PNG image using html2canvas
+        function exportStudentAsPng(student) {
+            const container = document.getElementById('studentModalContent');
+            if (!container) return;
+
+            // Backup original styles
+            const originalMaxHeight = container.style.maxHeight;
+            const originalOverflowY = container.style.overflowY;
+            const originalTransform = container.style.transform;
+            const originalBoxShadow = container.style.boxShadow;
+            const originalBorder = container.style.border;
+
+            // Hide close button and footer actions
+            const closeX = container.querySelector('#modalCloseX');
+            const footer = container.querySelector('.modal-footer');
+            const favBtn = container.querySelector('#modalFavBtn');
+
+            if (closeX) closeX.style.visibility = 'hidden';
+            if (favBtn) favBtn.style.visibility = 'hidden';
+            if (footer) footer.style.display = 'none';
+
+            // Temporarily adjust container styles for clean full capture
+            container.style.maxHeight = 'none';
+            container.style.overflowY = 'visible';
+            container.style.transform = 'none';
+            container.style.boxShadow = 'none';
+            container.style.border = 'none';
+
+            const isDark = appState.theme === 'dark';
+            const bgColor = isDark ? '#111827' : '#ffffff';
+
+            html2canvas(container, {
+                backgroundColor: bgColor,
+                useCORS: true,
+                scale: 2,
+                logging: false
+            }).then(canvas => {
+                // Restore styles immediately
+                container.style.maxHeight = originalMaxHeight;
+                container.style.overflowY = originalOverflowY;
+                container.style.transform = originalTransform;
+                container.style.boxShadow = originalBoxShadow;
+                container.style.border = originalBorder;
+
+                if (closeX) closeX.style.visibility = 'visible';
+                if (favBtn) favBtn.style.visibility = 'visible';
+                if (footer) footer.style.display = 'flex';
+
+                // Trigger PNG download
+                const imgData = canvas.toDataURL('image/png');
+                const a = document.createElement('a');
+                a.href = imgData;
+                a.download = `Slip_MTSD_${student.name.trim().replace(/\s+/g, '_')}_${getExamLabel(student.exam)}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }).catch(err => {
+                console.error("Gagal menjana imej PNG:", err);
+                alert("Ralat berlaku semasa menjana imej PNG.");
+                
+                // Restore styles on error
+                container.style.maxHeight = originalMaxHeight;
+                container.style.overflowY = originalOverflowY;
+                container.style.transform = originalTransform;
+                container.style.boxShadow = originalBoxShadow;
+                container.style.border = originalBorder;
+
+                if (closeX) closeX.style.visibility = 'visible';
+                if (favBtn) favBtn.style.visibility = 'visible';
+                if (footer) footer.style.display = 'flex';
+            });
         }
     </script>
 </body>
