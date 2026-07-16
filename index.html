@@ -2027,43 +2027,55 @@
                 return defaults;
             }
 
-            const uniqueCombos = [];
-            const seenCombos = new Set();
-            
-            data.students.forEach(student => {
-                const key = `${student.batch}-${student.form}-${student.exam}`;
-                if (!seenCombos.has(key)) {
-                    seenCombos.add(key);
-                    uniqueCombos.push({
-                        batch: student.batch,
-                        form: student.form,
-                        exam: student.exam,
-                        batchNum: parseInt(student.batch) || 0,
-                        formNum: parseInt(student.form.replace(/\D/g, '')) || 0,
-                        examNum: parseInt(student.exam) || 0
+            // 1. Find the latest batch (highest year)
+            const batches = [...data.batches].sort((a, b) => b - a);
+            const latestBatch = batches[0] || '';
+            defaults.batch = latestBatch;
+
+            if (latestBatch) {
+                // Filter students for the latest batch
+                const batchStudents = data.students.filter(s => s.batch == latestBatch);
+
+                // 2. Find the latest form (highest form with data in this batch)
+                const uniqueForms = [];
+                const seenForms = new Set();
+                batchStudents.forEach(s => {
+                    if (!seenForms.has(s.form)) {
+                        seenForms.add(s.form);
+                        uniqueForms.push({
+                            code: s.form,
+                            num: parseInt(s.form.replace(/\D/g, '')) || 0
+                        });
+                    }
+                });
+                uniqueForms.sort((a, b) => b.num - a.num);
+                const latestForm = uniqueForms[0] ? uniqueForms[0].code : '';
+                defaults.form = latestForm;
+
+                if (latestForm) {
+                    // 3. Find the latest exam (highest exam with data for this batch and form)
+                    const formStudents = batchStudents.filter(s => s.form == latestForm);
+                    const uniqueExams = [];
+                    const seenExams = new Set();
+                    formStudents.forEach(s => {
+                        if (!seenExams.has(s.exam)) {
+                            seenExams.add(s.exam);
+                            uniqueExams.push({
+                                code: s.exam,
+                                num: parseInt(s.exam) || 0
+                            });
+                        }
                     });
+                    uniqueExams.sort((a, b) => b.num - a.num);
+                    defaults.exam = uniqueExams[0] ? uniqueExams[0].code : '';
                 }
-            });
-            
-            // Sort to find the latest exam result:
-            // 1. batchNum descending (latest year/batch first)
-            // 2. formNum descending (latest/highest tingkatan first)
-            // 3. examNum descending (latest exam code/term first)
-            uniqueCombos.sort((a, b) => {
-                if (b.batchNum !== a.batchNum) {
-                    return b.batchNum - a.batchNum;
-                }
-                if (b.formNum !== a.formNum) {
-                    return b.formNum - a.formNum;
-                }
-                return b.examNum - a.examNum;
-            });
-            
-            if (uniqueCombos.length > 0) {
-                defaults.batch = uniqueCombos[0].batch;
-                defaults.form = uniqueCombos[0].form;
-                defaults.exam = uniqueCombos[0].exam;
             }
+
+            // Fallback just in case
+            if (!defaults.batch && data.batches) defaults.batch = data.batches[data.batches.length - 1] || '';
+            if (!defaults.form && data.forms) defaults.form = data.forms[data.forms.length - 1] || '';
+            if (!defaults.exam && data.exams) defaults.exam = data.exams[data.exams.length - 1] || '';
+
             return defaults;
         }
 
