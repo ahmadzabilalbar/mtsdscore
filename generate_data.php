@@ -34,7 +34,7 @@ function getGrade($score) {
     return ['grade' => 'F', 'gp' => 6];
 }
 
-$files = glob(__DIR__ . '/*.csv');
+$files = glob(__DIR__ . '/csv/*.csv');
 $students = [];
 $batches = [];
 $forms = [];

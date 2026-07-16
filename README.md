@@ -29,7 +29,8 @@ Sistem ini direka bentuk sebagai aplikasi *single-page application* (SPA) premiu
 
 ```
 mtsdscore/
-├── 2024-F1-1-L.csv       # Contoh fail data CSV mentah (Format: Batch-Form-Exam-Gender.csv)
+├── csv/                  # Folder yang mengandungi fail data CSV mentah
+│   └── 2024-F1-1-L.csv   # Contoh fail data CSV (Format: Batch-Form-Exam-Gender.csv)
 ├── data.js               # Pangkalan data statik yang dikompilasi (Digunakan oleh index.html)
 ├── generate_data.php     # Skrip CLI PHP untuk mengkompilasi fail CSV kepada data.js
 ├── index.html            # Antaramuka utama web (HTML, CSS, JS)
@@ -43,11 +44,11 @@ mtsdscore/
 Sistem ini menggunakan data statik `data.js` untuk kelajuan pemuatan yang optimum tanpa memerlukan pelayan pangkalan data (SQL) yang aktif. Ikuti langkah di bawah untuk menambah atau mengemas kini data peperiksaan:
 
 ### 1. Sediakan Fail CSV Mentah
-Letakkan fail CSV keputusan peperiksaan di dalam direktori utama. Nama fail mestilah mengikut format berikut:
+Letakkan fail CSV keputusan peperiksaan di dalam folder `csv/`. Nama fail mestilah mengikut format berikut:
 ```
 [Tahun/Batch]-[Tingkatan]-[KodPeperiksaan]-[Jantina].csv
 ```
-*Contoh:* `2024-F1-1-L.csv` (Batch 2024, Tingkatan 1, Peperiksaan 1, Lelaki).
+*Contoh:* `csv/2024-F1-1-L.csv` (Batch 2024, Tingkatan 1, Peperiksaan 1, Lelaki).
 
 #### Format Kandungan Fail CSV:
 - **Baris Pertama (Header):** Nama Lajur Pertama mestilah untuk nama pelajar (cth: `NAMA`), diikuti oleh singkatan kod subjek (cth: `BM`, `BI`, `SEJ`, `MATE`, `SNS`).
