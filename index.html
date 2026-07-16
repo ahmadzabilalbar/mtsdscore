@@ -1992,6 +1992,62 @@
             }
         }
 
+        // Determine the latest exam result combination (batch, form, exam) dynamically
+        function getDefaultFilters(data) {
+            const defaults = {
+                batch: '',
+                form: '',
+                exam: ''
+            };
+            if (!data || !data.students || data.students.length === 0) {
+                if (data) {
+                    defaults.batch = data.batches[data.batches.length - 1] || '';
+                    defaults.form = data.forms[0] || '';
+                    defaults.exam = data.exams[data.exams.length - 1] || '';
+                }
+                return defaults;
+            }
+
+            const uniqueCombos = [];
+            const seenCombos = new Set();
+            
+            data.students.forEach(student => {
+                const key = `${student.batch}-${student.form}-${student.exam}`;
+                if (!seenCombos.has(key)) {
+                    seenCombos.add(key);
+                    uniqueCombos.push({
+                        batch: student.batch,
+                        form: student.form,
+                        exam: student.exam,
+                        batchNum: parseInt(student.batch) || 0,
+                        formNum: parseInt(student.form.replace(/\D/g, '')) || 0,
+                        examNum: parseInt(student.exam) || 0
+                    });
+                }
+            });
+            
+            // Sort to find the latest exam result:
+            // 1. batchNum descending (latest year/batch first)
+            // 2. examNum descending (latest exam code/term first)
+            // 3. formNum descending (highest form first)
+            uniqueCombos.sort((a, b) => {
+                if (b.batchNum !== a.batchNum) {
+                    return b.batchNum - a.batchNum;
+                }
+                if (b.examNum !== a.examNum) {
+                    return b.examNum - a.examNum;
+                }
+                return b.formNum - a.formNum;
+            });
+            
+            if (uniqueCombos.length > 0) {
+                defaults.batch = uniqueCombos[0].batch;
+                defaults.form = uniqueCombos[0].form;
+                defaults.exam = uniqueCombos[0].exam;
+            }
+            return defaults;
+        }
+
         // Load compiled static data from window context
         function loadStaticDashboardData() {
             if (typeof MTSD_DATA === 'undefined') {
@@ -2005,10 +2061,11 @@
             // Setup filters selection values
             populateFilterDropdowns(MTSD_DATA);
             
-            // Set default filter values to the first item in the list (latest for exam)
-            appState.activeFilters.batch = MTSD_DATA.batches[0] || '';
-            appState.activeFilters.form = MTSD_DATA.forms[0] || '';
-            appState.activeFilters.exam = MTSD_DATA.exams[MTSD_DATA.exams.length - 1] || '';
+            // Set default filter values to the latest exam result
+            const defaults = getDefaultFilters(MTSD_DATA);
+            appState.activeFilters.batch = defaults.batch;
+            appState.activeFilters.form = defaults.form;
+            appState.activeFilters.exam = defaults.exam;
             // Keep gender default as empty/all
             
             // Sync inputs with state
@@ -2120,11 +2177,12 @@
                 document.getElementById('searchFilter').value = '';
                 appState.activeFilters.search = '';
                 
-                // Keep batch, form, and exam as first loaded items, reset gender and favourites to all
+                // Reset to default latest exam result values
                 if (appState.rawData) {
-                    appState.activeFilters.batch = appState.rawData.batches[0] || '';
-                    appState.activeFilters.form = appState.rawData.forms[0] || '';
-                    appState.activeFilters.exam = appState.rawData.exams[appState.rawData.exams.length - 1] || '';
+                    const defaults = getDefaultFilters(appState.rawData);
+                    appState.activeFilters.batch = defaults.batch;
+                    appState.activeFilters.form = defaults.form;
+                    appState.activeFilters.exam = defaults.exam;
                     appState.activeFilters.gender = '';
                     appState.activeFilters.favouritesOnly = false;
                     
