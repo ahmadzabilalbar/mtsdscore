@@ -1674,6 +1674,42 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- New Row: Subject-specific Exam Comparison -->
+                <div class="trends-grid" style="grid-template-columns: 2fr 1fr; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    <!-- Line Chart showing subject average across exams -->
+                    <div class="trends-card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;">
+                            <h3 style="margin-bottom: 0;"><i data-lucide="book-open" style="color: var(--primary-light); width: 18px; height: 18px;"></i> Analisis Aliran Mengikut Subjek</h3>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <label for="trendSubjectSelector" style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Subjek:</label>
+                                <select id="trendSubjectSelector" class="filter-input" style="width: 180px; padding: 4px 8px;"></select>
+                            </div>
+                        </div>
+                        <div style="position: relative; height: 320px; width: 100%;">
+                            <canvas id="subjectProgressionChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Subject stats comparison table -->
+                    <div class="trends-card">
+                        <h3><i data-lucide="list" style="color: var(--color-b); width: 18px; height: 18px;"></i> Perbandingan Gred Subjek</h3>
+                        <div class="table-responsive" style="margin-top: 10px;">
+                            <table class="trend-stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Peperiksaan</th>
+                                        <th>Ambil</th>
+                                        <th>Purata (%)</th>
+                                        <th>Lulus (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="subjectTrendComparisonBody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     </div>
@@ -1873,7 +1909,8 @@
                 form: '',
                 exam: '',
                 gender: '',
-                favouritesOnly: false
+                favouritesOnly: false,
+                trendSubject: ''
             },
             favourites: JSON.parse(localStorage.getItem('mtsd-favourites') || '[]'),
             currentSort: {
@@ -1885,7 +1922,8 @@
             charts: {
                 radar: null,
                 bar: null,
-                progression: null
+                progression: null,
+                subjectProgression: null
             }
         };
 
@@ -2084,6 +2122,9 @@
             // Re-render charts to match new theme colors if necessary
             if (appState.rawData) {
                 renderCharts();
+                if (typeof renderSubjectTrendProgression === 'function') {
+                    renderSubjectTrendProgression();
+                }
             }
         }
 
@@ -2173,6 +2214,13 @@
             appState.activeFilters.batch = defaults.batch;
             appState.activeFilters.form = defaults.form;
             appState.activeFilters.exam = defaults.exam;
+            
+            // Set default trend subject to first available subject
+            const subjectsList = Object.keys(MTSD_DATA.subjects);
+            appState.activeFilters.trendSubject = subjectsList[0] || '';
+            if (document.getElementById('trendSubjectSelector')) {
+                document.getElementById('trendSubjectSelector').value = appState.activeFilters.trendSubject;
+            }
             // Keep gender default as empty/all
             
             // Sync inputs with state
@@ -2215,6 +2263,18 @@
             populate('formFilter', data.forms);
             populate('examFilter', data.exams);
             populate('genderFilter', data.genders, 'Semua Jantina');
+
+            // Populate subject selector for trend page
+            const subjectSelector = document.getElementById('trendSubjectSelector');
+            if (subjectSelector) {
+                subjectSelector.innerHTML = '';
+                Object.keys(data.subjects).forEach(subCode => {
+                    const opt = document.createElement('option');
+                    opt.value = subCode;
+                    opt.textContent = `${subCode} - ${data.subjects[subCode]}`;
+                    subjectSelector.appendChild(opt);
+                });
+            }
         }
 
         // Clean user facing labels for filters
@@ -2287,6 +2347,15 @@
                 });
             });
 
+            // Subject trend comparison filter changed
+            const trendSubjectSel = document.getElementById('trendSubjectSelector');
+            if (trendSubjectSel) {
+                trendSubjectSel.addEventListener('change', (e) => {
+                    appState.activeFilters.trendSubject = e.target.value;
+                    renderSubjectTrendProgression();
+                });
+            }
+
             // Favourites Filter change
             document.getElementById('favouritesFilter').addEventListener('change', (e) => {
                 appState.activeFilters.favouritesOnly = e.target.checked;
@@ -2312,6 +2381,13 @@
                     appState.activeFilters.exam = defaults.exam;
                     appState.activeFilters.gender = '';
                     appState.activeFilters.favouritesOnly = false;
+                    
+                    // Reset trend subject selector to first key
+                    const subjects = Object.keys(appState.rawData.subjects);
+                    appState.activeFilters.trendSubject = subjects[0] || '';
+                    if (document.getElementById('trendSubjectSelector')) {
+                        document.getElementById('trendSubjectSelector').value = appState.activeFilters.trendSubject;
+                    }
                     
                     document.getElementById('batchFilter').value = appState.activeFilters.batch;
                     document.getElementById('formFilter').value = appState.activeFilters.form;
@@ -2504,15 +2580,17 @@
 
             // Apply currently active sort
             sortStudents();
-
+            
             // Run rendering functions
             renderOverviewStats();
             renderLeaderboard();
             renderSubjectAnalytics();
             renderExamProgressionTrend();
+            renderSubjectTrendProgression();
             
             // Load/update charts
             renderCharts();
+            lucide.createIcons();
         }
 
         // Render overview analytics cards
@@ -2793,6 +2871,161 @@
                     <td style="color: var(--success); font-weight: 600;">${metric.passRate.toFixed(2)}%</td>
                 `;
                 tbody.appendChild(tr);
+            });
+        }
+
+        // Render Subject progression trend across exams
+        function renderSubjectTrendProgression() {
+            if (!appState.rawData) return;
+
+            const currentBatch = appState.activeFilters.batch;
+            const currentForm = appState.activeFilters.form;
+            const selectedSub = appState.activeFilters.trendSubject;
+            const tbody = document.getElementById('subjectTrendComparisonBody');
+            
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (!currentBatch || !currentForm || !selectedSub) {
+                return;
+            }
+
+            const examsList = appState.rawData.exams;
+            const subjectMetrics = [];
+
+            examsList.forEach(exam => {
+                const examStudents = appState.rawData.students.filter(s => 
+                    s.batch == currentBatch && 
+                    s.form == currentForm && 
+                    s.exam == exam
+                );
+
+                // Filter students who actually have a score for the selected subject
+                const subjectStudents = examStudents.filter(s => 
+                    s.scores[selectedSub] !== null && 
+                    s.scores[selectedSub] !== undefined && 
+                    s.scores[selectedSub] !== ''
+                );
+
+                if (subjectStudents.length > 0) {
+                    const count = subjectStudents.length;
+                    const sum = subjectStudents.reduce((acc, s) => acc + parseFloat(s.scores[selectedSub]), 0);
+                    const avg = sum / count;
+
+                    // Pass is score >= 40
+                    const passCount = subjectStudents.filter(s => parseFloat(s.scores[selectedSub]) >= 40).length;
+                    const passRate = (passCount / count) * 100;
+
+                    subjectMetrics.push({
+                        exam: exam,
+                        count: count,
+                        average: avg,
+                        passRate: passRate
+                    });
+                }
+            });
+
+            if (subjectMetrics.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Tiada data tren bagi subjek ini</td></tr>';
+                
+                // Destroy subject chart if it exists
+                if (appState.charts.subjectProgression) {
+                    appState.charts.subjectProgression.destroy();
+                    appState.charts.subjectProgression = null;
+                }
+                return;
+            }
+
+            // Render table rows
+            subjectMetrics.forEach(metric => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 700;">${escapeHtml(getExamLabel(metric.exam))}</td>
+                    <td>${metric.count}</td>
+                    <td style="font-weight: 600;">${metric.average.toFixed(2)}%</td>
+                    <td style="color: var(--success); font-weight: 600;">${metric.passRate.toFixed(2)}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Re-render chart for subject progression
+            renderSubjectProgressionChart(subjectMetrics);
+        }
+
+        // Draw the Chart.js line progression graph for the selected subject
+        function renderSubjectProgressionChart(subjectMetrics) {
+            if (appState.charts.subjectProgression) {
+                appState.charts.subjectProgression.destroy();
+            }
+
+            const canvas = document.getElementById('subjectProgressionChart');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const isDark = appState.theme === 'dark';
+            const labelColor = isDark ? '#94a3b8' : '#475569';
+            const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+            const labels = subjectMetrics.map(m => getExamLabel(m.exam));
+            const averages = subjectMetrics.map(m => parseFloat(m.average.toFixed(2)));
+            const passRates = subjectMetrics.map(m => parseFloat(m.passRate.toFixed(2)));
+
+            appState.charts.subjectProgression = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Purata Subjek (%)',
+                            data: averages,
+                            borderColor: '#818cf8',
+                            backgroundColor: 'rgba(129, 140, 248, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.35,
+                            fill: true,
+                            pointBackgroundColor: '#6366f1',
+                            pointHoverRadius: 7
+                        },
+                        {
+                            label: 'Kadar Kelulusan (%)',
+                            data: passRates,
+                            borderColor: '#34d399',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.35,
+                            pointBackgroundColor: '#10b981',
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { color: labelColor, font: { family: 'Plus Jakarta Sans', weight: 600 } }
+                        },
+                        tooltip: {
+                            padding: 12,
+                            bodyFont: { family: 'Plus Jakarta Sans' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: labelColor, font: { family: 'Plus Jakarta Sans', weight: 600 } }
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: gridColor },
+                            ticks: { color: labelColor, font: { family: 'Plus Jakarta Sans' } }
+                        }
+                    }
+                }
             });
         }
 
