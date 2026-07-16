@@ -1456,6 +1456,9 @@
                 <button class="btn-theme" id="logoutBtn" style="display: none;" title="Log Keluar" aria-label="Log Keluar">
                     <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
                 </button>
+                <button class="btn-theme" id="infoGradingBtn" title="Sistem Gred MTSD" aria-label="Sistem Gred MTSD">
+                    <i data-lucide="info" style="width: 18px; height: 18px;"></i>
+                </button>
                 <button class="btn-theme" id="themeToggleBtn" aria-label="Tukar Tema">
                     <i data-lucide="sun" id="themeSunIcon" style="display: none; width: 18px; height: 18px;"></i>
                     <i data-lucide="moon" id="themeMoonIcon" style="width: 18px; height: 18px;"></i>
@@ -1773,6 +1776,75 @@
                 <button class="btn-modal btn-modal-print" id="modalPrintBtn">
                     <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Cetak Slip Keputusan
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grading Info Modal -->
+    <div class="modal-overlay" id="gradingModal">
+        <div class="modal-container" style="max-width: 500px;">
+            <div class="modal-header">
+                <div class="modal-student-info">
+                    <span class="modal-student-name">Skala Gred MTSD</span>
+                    <span class="modal-student-meta">Sistem Pemarkahan & Nilai Gred Purata</span>
+                </div>
+                <button class="modal-close-btn" id="gradingModalCloseBtn" aria-label="Tutup modal">
+                    <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border-color);">
+                            <th style="padding: 8px;">Julat Markah</th>
+                            <th style="padding: 8px; text-align: center;">Gred</th>
+                            <th style="padding: 8px; text-align: center;">Mata Gred (GP)</th>
+                            <th style="padding: 8px;">Keterangan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px 8px; font-weight: 600;">85 - 100</td>
+                            <td style="padding: 10px 8px; text-align: center;"><span class="grade-badge grade-a" style="min-width: 32px;">A</span></td>
+                            <td style="padding: 10px 8px; text-align: center; font-weight: 700;">1</td>
+                            <td style="padding: 10px 8px; color: var(--success); font-weight: 600;">Cemerlang</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px 8px; font-weight: 600;">70 - 84</td>
+                            <td style="padding: 10px 8px; text-align: center;"><span class="grade-badge grade-b" style="min-width: 32px;">B</span></td>
+                            <td style="padding: 10px 8px; text-align: center; font-weight: 700;">2</td>
+                            <td style="padding: 10px 8px; color: var(--primary-light); font-weight: 600;">Baik</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px 8px; font-weight: 600;">60 - 69</td>
+                            <td style="padding: 10px 8px; text-align: center;"><span class="grade-badge grade-c" style="min-width: 32px;">C</span></td>
+                            <td style="padding: 10px 8px; text-align: center; font-weight: 700;">3</td>
+                            <td style="padding: 10px 8px; color: var(--text-secondary);">Memuaskan</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px 8px; font-weight: 600;">50 - 59</td>
+                            <td style="padding: 10px 8px; text-align: center;"><span class="grade-badge grade-d" style="min-width: 32px;">D</span></td>
+                            <td style="padding: 10px 8px; text-align: center; font-weight: 700;">4</td>
+                            <td style="padding: 10px 8px; color: var(--text-muted);">Kurang Memuaskan</td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 10px 8px; font-weight: 600;">40 - 49</td>
+                            <td style="padding: 10px 8px; text-align: center;"><span class="grade-badge grade-e" style="min-width: 32px;">E</span></td>
+                            <td style="padding: 10px 8px; text-align: center; font-weight: 700;">5</td>
+                            <td style="padding: 10px 8px; color: var(--color-e); font-weight: 600;">Pencapaian Minimum</td>
+                        </tr>
+                        <tr style="border-bottom: none;">
+                            <td style="padding: 10px 8px; font-weight: 600;">0 - 39</td>
+                            <td style="padding: 10px 8px; text-align: center;"><span class="grade-badge grade-f" style="min-width: 32px;">F</span></td>
+                            <td style="padding: 10px 8px; text-align: center; font-weight: 700;">6</td>
+                            <td style="padding: 10px 8px; color: var(--color-f); font-weight: 600;">Belum Mencapai Tahap Minimum</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-size: 0.8rem; line-height: 1.4; color: var(--text-secondary);">
+                    <strong>Nota Pengiraan GPP:</strong><br>
+                    Gred Purata Pelajar (GPP) dikira dengan menjumlahkan nilai mata gred (GP) bagi semua subjek yang diambil, kemudian dibahagikan dengan bilangan subjek tersebut. Nilai GPP yang lebih kecil menunjukkan pencapaian yang lebih cemerlang.
+                </div>
             </div>
         </div>
     </div>
@@ -2298,6 +2370,24 @@
 
             // Print hook
             document.getElementById('modalPrintBtn').addEventListener('click', printReportCard);
+
+            // Grading Modal Hooks
+            const gradingModal = document.getElementById('gradingModal');
+            document.getElementById('infoGradingBtn').addEventListener('click', () => {
+                gradingModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                if (window.lucide) window.lucide.createIcons();
+            });
+            document.getElementById('gradingModalCloseBtn').addEventListener('click', () => {
+                gradingModal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            });
+            gradingModal.addEventListener('click', (e) => {
+                if (e.target.id === 'gradingModal') {
+                    gradingModal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
         }
 
         // Toggle table sorting
