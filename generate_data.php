@@ -156,8 +156,15 @@ $jsonData = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 $jsContent = "const MTSD_DATA = " . $jsonData . ";\n";
 
 $targetFile = __DIR__ . '/data.js';
-if (file_put_contents($targetFile, $jsContent) !== false) {
-    echo "SUCCESS: Compiled data of " . count($students) . " student records into data.js\n";
+$tempFile = $targetFile . '.tmp';
+
+if (file_put_contents($tempFile, $jsContent) !== false) {
+    if (rename($tempFile, $targetFile)) {
+        echo "SUCCESS: Compiled data of " . count($students) . " student records into data.js\n";
+    } else {
+        @unlink($tempFile);
+        echo "ERROR: Failed to rename temporary data file to data.js\n";
+    }
 } else {
-    echo "ERROR: Failed to write data.js\n";
+    echo "ERROR: Failed to write temporary data file\n";
 }
