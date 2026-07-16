@@ -75,7 +75,7 @@ foreach ($files as $file) {
                 if (empty($row) || trim($row[0]) === '') {
                     continue;
                 }
-                $name = trim($row[0]);
+                $name = strtoupper(preg_replace('/\s+/', ' ', trim($row[0])));
                 $scores = [];
                 $total_marks = 0;
                 $subjects_count = 0;

@@ -1835,12 +1835,19 @@
         };
 
         // Favourites helper functions
+        function normalizeName(name) {
+            if (!name) return '';
+            return name.trim().toUpperCase().replace(/\s+/g, ' ');
+        }
+
         function isFavourite(name) {
-            return appState.favourites.includes(name);
+            const normalized = normalizeName(name);
+            return appState.favourites.some(fav => normalizeName(fav) === normalized);
         }
 
         function toggleFavourite(name) {
-            const idx = appState.favourites.indexOf(name);
+            const normalized = normalizeName(name);
+            const idx = appState.favourites.findIndex(fav => normalizeName(fav) === normalized);
             if (idx > -1) {
                 appState.favourites.splice(idx, 1);
             } else {
@@ -1857,7 +1864,7 @@
 
         function updateModalFavBtnState(name) {
             const modalFavBtn = document.getElementById('modalFavBtn');
-            if (modalFavBtn && document.getElementById('modalName').textContent === name) {
+            if (modalFavBtn && normalizeName(document.getElementById('modalName').textContent) === normalizeName(name)) {
                 if (isFavourite(name)) {
                     modalFavBtn.classList.add('active');
                 } else {
