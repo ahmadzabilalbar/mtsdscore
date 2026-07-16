@@ -2014,7 +2014,7 @@
             if (!data || !data.students || data.students.length === 0) {
                 if (data) {
                     defaults.batch = data.batches[data.batches.length - 1] || '';
-                    defaults.form = data.forms[0] || '';
+                    defaults.form = data.forms[data.forms.length - 1] || '';
                     defaults.exam = data.exams[data.exams.length - 1] || '';
                 }
                 return defaults;
@@ -2040,16 +2040,16 @@
             
             // Sort to find the latest exam result:
             // 1. batchNum descending (latest year/batch first)
-            // 2. examNum descending (latest exam code/term first)
-            // 3. formNum descending (highest form first)
+            // 2. formNum descending (latest/highest tingkatan first)
+            // 3. examNum descending (latest exam code/term first)
             uniqueCombos.sort((a, b) => {
                 if (b.batchNum !== a.batchNum) {
                     return b.batchNum - a.batchNum;
                 }
-                if (b.examNum !== a.examNum) {
-                    return b.examNum - a.examNum;
+                if (b.formNum !== a.formNum) {
+                    return b.formNum - a.formNum;
                 }
-                return b.formNum - a.formNum;
+                return b.examNum - a.examNum;
             });
             
             if (uniqueCombos.length > 0) {
