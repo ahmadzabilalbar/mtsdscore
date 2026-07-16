@@ -1,0 +1,3035 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTSD SCORE - Sistem Analisis Keputusan Peperiksaan</title>
+    <meta name="description" content="Sistem Analisis Keputusan Peperiksaan Maahad Tahfiz Sains Darul Aman (MTSD). Analisis keputusan pelajar, kedudukan, subjek dan aliran secara interaktif.">
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons via CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Local Static Compiled Data -->
+    <script src="data.js"></script>
+
+    <!-- Custom Styling (Vanilla CSS) -->
+    <style>
+        :root {
+            /* Palette: Deep Indigo / Slate Dark Mode */
+            --bg-body: #0b0f19;
+            --bg-surface: rgba(20, 26, 45, 0.6);
+            --bg-surface-hover: rgba(30, 39, 65, 0.85);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-color-focus: rgba(99, 102, 241, 0.4);
+            
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --primary-glow: rgba(99, 102, 241, 0.15);
+            
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.1);
+            
+            /* Grade Colors */
+            --color-a: #10b981;
+            --bg-a: rgba(16, 185, 129, 0.12);
+            --color-b: #06b6d4;
+            --bg-b: rgba(6, 182, 212, 0.12);
+            --color-c: #f59e0b;
+            --bg-c: rgba(245, 158, 11, 0.12);
+            --color-d: #d97706;
+            --bg-d: rgba(217, 119, 6, 0.12);
+            --color-e: #f97316;
+            --bg-e: rgba(249, 115, 22, 0.12);
+            --color-f: #ef4444;
+            --bg-f: rgba(239, 68, 68, 0.12);
+            
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --font-family: 'Plus Jakarta Sans', sans-serif;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+        }
+
+        /* Light Mode Theme overrides (if triggered) */
+        [data-theme="light"] {
+            --bg-body: #f8fafc;
+            --bg-surface: rgba(255, 255, 255, 0.85);
+            --bg-surface-hover: rgba(255, 255, 255, 0.95);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --border-color-focus: rgba(99, 102, 241, 0.5);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --card-shadow: 0 8px 24px 0 rgba(148, 163, 184, 0.15);
+            --primary-glow: rgba(99, 102, 241, 0.08);
+            --bg-a: rgba(16, 185, 129, 0.08);
+            --bg-b: rgba(6, 182, 212, 0.08);
+            --bg-c: rgba(245, 158, 11, 0.08);
+            --bg-d: rgba(217, 119, 6, 0.08);
+            --bg-e: rgba(249, 115, 22, 0.08);
+            --bg-f: rgba(239, 68, 68, 0.08);
+        }
+
+        /* Base Reset */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.25s, border-color 0.25s, color 0.2s;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding-bottom: 60px;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow in Background */
+        .ambient-glow {
+            position: absolute;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 600px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(99, 102, 241, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Layout Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 10px 16px;
+        }
+
+        /* Header Styling */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo-icon {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 6px 8px;
+            border-radius: var(--radius-sm);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo-text h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, var(--text-primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-theme {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-theme:hover {
+            border-color: var(--primary-light);
+            color: var(--text-primary);
+        }
+
+        /* Filter Controls */
+        .filter-panel {
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            box-shadow: var(--card-shadow);
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.2fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .filter-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .input-search-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .input-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            width: 14px;
+            height: 14px;
+        }
+
+        .filter-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            outline: none;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .filter-input-search {
+            padding-left: 32px;
+        }
+
+        .btn-clear {
+            background: transparent;
+            border: 1px dashed var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-clear:hover {
+            border-color: var(--color-f);
+            color: var(--color-f);
+            background: var(--bg-f);
+        }
+
+        /* Stats Section */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stats-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
+        }
+
+        .stats-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px -8px var(--primary-glow);
+        }
+
+        .stats-icon-wrapper {
+            background: var(--primary-glow);
+            color: var(--primary-light);
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stats-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stats-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .stats-value {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        .stats-subtext {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0px;
+            font-weight: 500;
+        }
+
+        /* Tabs Navigation */
+        .tab-section {
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+
+        .tabs-header {
+            display: flex;
+            background: rgba(15, 23, 42, 0.3);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 12px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 10px 14px;
+            font-family: var(--font-family);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            outline: none;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--primary-light);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 14px;
+            right: 14px;
+            height: 2px;
+            background: var(--primary-light);
+            border-radius: 2px 2px 0 0;
+            box-shadow: 0 -2px 6px var(--primary);
+        }
+
+        .tab-content {
+            padding: 14px;
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.25s ease-in-out;
+        }
+
+        /* Table Design */
+        .table-responsive {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        th {
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border-color);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            color: var(--text-primary);
+        }
+
+        .sort-icon {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 4px;
+            font-size: 0.65rem;
+            vertical-align: middle;
+            color: var(--text-muted);
+        }
+
+        tr {
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody tr {
+            cursor: pointer;
+        }
+
+        tbody tr:hover {
+            background-color: var(--bg-surface-hover);
+        }
+
+        td {
+            padding: 8px 12px;
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        .td-rank {
+            font-weight: 800;
+            color: var(--primary-light);
+            font-size: 0.95rem;
+            width: 48px;
+        }
+
+        .rank-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-weight: 800;
+            font-size: 0.75rem;
+        }
+
+        .rank-gold {
+            background: linear-gradient(135deg, #fef08a 0%, #eab308 100%);
+            color: #713f12;
+            box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3);
+        }
+
+        .rank-silver {
+            background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
+            color: #334155;
+            box-shadow: 0 2px 8px rgba(203, 213, 225, 0.3);
+        }
+
+        .rank-bronze {
+            background: linear-gradient(135deg, #fed7aa 0%, #ca8a04 100%);
+            color: #78350f;
+            box-shadow: 0 2px 8px rgba(202, 138, 4, 0.3);
+        }
+
+        .td-name {
+            font-weight: 600;
+            letter-spacing: -0.2px;
+        }
+
+        .td-gender {
+            color: var(--text-secondary);
+        }
+
+        .grades-badge-list {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .grade-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 6px;
+            border-radius: 4px;
+            min-width: 22px;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .grade-a { color: var(--color-a); background: var(--bg-a); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .grade-b { color: var(--color-b); background: var(--bg-b); border: 1px solid rgba(6, 182, 212, 0.2); }
+        .grade-c { color: var(--color-c); background: var(--bg-c); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .grade-d { color: var(--color-d); background: var(--bg-d); border: 1px solid rgba(217, 119, 6, 0.2); }
+        .grade-e { color: var(--color-e); background: var(--bg-e); border: 1px solid rgba(249, 115, 22, 0.2); }
+        .grade-f { color: var(--color-f); background: var(--bg-f); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+        .td-score {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .score-pass {
+            color: var(--success);
+        }
+
+        .score-fail {
+            color: var(--color-f);
+        }
+
+        .td-gpp {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .btn-view {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: var(--primary-light);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+        }
+
+        .btn-view:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Subject Analytics Grid */
+        .subjects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .subject-card {
+            background: rgba(15, 23, 42, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .subject-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .subject-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .subject-code {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--primary-light);
+            letter-spacing: 0.5px;
+        }
+
+        .subject-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 2px;
+            line-height: 1.2;
+        }
+
+        .subject-stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 6px 8px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
+        .sub-stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sub-stat-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .sub-stat-value {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        .subject-avg-block {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            padding-top: 8px;
+        }
+
+        .subject-avg-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .subject-avg-value {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+
+        /* Grade stack bar */
+        .grade-distribution-bar {
+            height: 5px;
+            display: flex;
+            border-radius: 2px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            margin-top: 2px;
+        }
+
+        .dist-segment {
+            height: 100%;
+        }
+
+        /* Trends Comparison Tab Layout */
+        .trends-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .trends-card {
+            background: rgba(15, 23, 42, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+        }
+
+        .trends-card h3 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .trend-stats-table th {
+            border-bottom: 1px solid var(--border-color);
+            cursor: default;
+        }
+
+        /* Student Detail Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(7, 10, 20, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-container {
+            background: #111827;
+            border: 1px solid var(--border-color);
+            width: 90%;
+            max-width: 850px;
+            max-height: 95vh;
+            border-radius: var(--radius-md);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-overlay.active .modal-container {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(17, 24, 39, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .modal-student-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .modal-student-name {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: -0.3px;
+        }
+
+        .modal-student-meta {
+            display: flex;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .modal-meta-pill {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1px 6px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 12px 16px;
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 16px;
+        }
+
+        .modal-card {
+            background: rgba(15, 23, 42, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+        }
+
+        .modal-card-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+        }
+
+        /* Student Stats Summary inside modal */
+        .modal-student-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .modal-stat-box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-stat-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .modal-stat-value {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin-top: 2px;
+        }
+
+        /* Grade Counter grid */
+        .grade-counter-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .grade-counter-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .grade-counter-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+        }
+
+        .grade-counter-value {
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+
+        /* Modal Table styling */
+        .modal-table {
+            font-size: 0.8rem;
+        }
+
+        .modal-table th {
+            padding: 5px 8px;
+            font-size: 0.65rem;
+        }
+
+        .modal-table td {
+            padding: 5px 8px;
+        }
+
+        .modal-footer {
+            padding: 10px 16px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            background: rgba(17, 24, 39, 0.95);
+            position: sticky;
+            bottom: 0;
+        }
+
+        .btn-modal {
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-modal-close {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-modal-close:hover {
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+
+        .btn-modal-print {
+            background: var(--primary);
+            border: 1px solid var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+        }
+
+        .btn-modal-print:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Empty State */
+        .empty-state {
+            padding: 60px 20px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state-icon {
+            color: var(--text-muted);
+            width: 48px;
+            height: 48px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .empty-state p {
+            max-width: 400px;
+            font-size: 0.9rem;
+        }
+
+        /* Screen Reader Utility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-body);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.4s ease;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Login Overlay */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-body);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2500;
+            opacity: 1;
+            transition: opacity 0.4s ease, visibility 0.4s;
+        }
+
+        .login-card {
+            background: var(--bg-surface);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 36px 30px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--card-shadow);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+            z-index: 2501;
+            animation: loginCardFadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes loginCardFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-header h2 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-top: 12px;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, var(--text-primary), var(--primary-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-header p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+            font-weight: 500;
+        }
+
+        .login-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .login-input-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            pointer-events: none;
+            width: 16px;
+            height: 16px;
+        }
+
+        .login-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 40px 10px 38px;
+            border-radius: var(--radius-md);
+            font-family: var(--font-family);
+            font-size: 0.9rem;
+            outline: none;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .login-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+
+        .btn-toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-toggle-password:hover {
+            color: var(--text-primary);
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            transition: all 0.25s ease;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-error {
+            color: var(--color-f);
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: none;
+            text-align: center;
+            animation: shake 0.3s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1200px) {
+            .filter-panel {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 12px;
+            }
+            .filter-panel .btn-clear {
+                grid-column: span 3;
+                width: 100%;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 800px) {
+            .filter-panel {
+                grid-template-columns: 1fr;
+            }
+            .filter-panel .btn-clear {
+                grid-column: span 1;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .trends-grid {
+                grid-template-columns: 1fr;
+            }
+            .modal-body {
+                grid-template-columns: 1fr;
+            }
+            .tab-btn {
+                padding: 12px 10px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Favourites Styling */
+        .btn-favourite {
+            cursor: pointer;
+            transition: transform 0.2s, color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            margin-right: 6px;
+            color: var(--text-muted);
+        }
+        .btn-favourite:hover {
+            transform: scale(1.2);
+            color: #f59e0b !important;
+        }
+        .btn-favourite.active {
+            color: #f59e0b !important;
+        }
+        .btn-favourite.active svg {
+            fill: #f59e0b;
+        }
+
+        .btn-favourite-modal {
+            cursor: pointer;
+            transition: transform 0.2s, color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            padding: 4px;
+            border-radius: 50%;
+        }
+        .btn-favourite-modal:hover {
+            transform: scale(1.2);
+            color: #f59e0b !important;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .btn-favourite-modal.active {
+            color: #f59e0b !important;
+        }
+        .btn-favourite-modal.active svg {
+            fill: #f59e0b;
+        }
+
+        /* Print Layout Rules */
+        @media print {
+            body {
+                background: white;
+                color: black !important;
+                padding: 0;
+            }
+
+            .container, .ambient-glow, .loading-overlay, .modal-overlay {
+                display: none !important;
+            }
+
+            /* Make sure the modal content is visible when printing */
+            .print-container-wrapper {
+                display: block !important;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                color: black !important;
+            }
+
+            .modal-container {
+                border: none !important;
+                box-shadow: none !important;
+                background: white !important;
+                color: black !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: 100% !important;
+                position: static !important;
+                transform: none !important;
+                overflow: visible !important;
+            }
+
+            .modal-header {
+                background: white !important;
+                color: black !important;
+                border-bottom: 2px solid #1e293b !important;
+                padding: 10px 0 !important;
+            }
+
+            .modal-student-name {
+                color: black !important;
+                font-size: 1.8rem !important;
+            }
+
+            .modal-student-meta {
+                color: #475569 !important;
+            }
+
+            .modal-meta-pill {
+                border: 1px solid #cbd5e1 !important;
+                background: #f1f5f9 !important;
+                color: #0f172a !important;
+            }
+
+            .modal-close-btn, .modal-footer, .no-print {
+                display: none !important;
+            }
+
+            .modal-body {
+                display: block !important;
+                padding: 20px 0 !important;
+            }
+
+            .modal-card {
+                border: 1px solid #e2e8f0 !important;
+                background: white !important;
+                color: black !important;
+                margin-bottom: 20px !important;
+                box-shadow: none !important;
+            }
+
+            .modal-card-title {
+                color: black !important;
+                border-bottom: 1px solid #cbd5e1 !important;
+            }
+
+            table {
+                color: black !important;
+            }
+
+            th {
+                color: #1e293b !important;
+                border-bottom: 2px solid #475569 !important;
+            }
+
+            td {
+                color: black !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+            }
+
+            /* Colors for grades when printing */
+            .grade-badge {
+                border: 1px solid #94a3b8 !important;
+                background: #f1f5f9 !important;
+                color: black !important;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+
+            .grade-a { border-color: #10b981 !important; background-color: #d1fae5 !important; color: #065f46 !important; }
+            .grade-b { border-color: #06b6d4 !important; background-color: #ecfeff !important; color: #155e75 !important; }
+            .grade-c { border-color: #f59e0b !important; background-color: #fef3c7 !important; color: #92400e !important; }
+            .grade-d { border-color: #d97706 !important; background-color: #ffedd5 !important; color: #9a3412 !important; }
+            .grade-e { border-color: #f97316 !important; background-color: #fff7ed !important; color: #c2410c !important; }
+            .grade-f { border-color: #ef4444 !important; background-color: #fee2e2 !important; color: #991b1b !important; }
+
+            .modal-stat-box {
+                background: #f8fafc !important;
+                border: 1px solid #e2e8f0 !important;
+                color: black !important;
+            }
+
+            .modal-stat-label {
+                color: #475569 !important;
+            }
+
+            .modal-stat-value {
+                color: black !important;
+            }
+
+            .score-pass { color: #047857 !important; }
+            .score-fail { color: #b91c1c !important; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Ambient glowing backgrounds -->
+    <div class="ambient-glow"></div>
+
+    <!-- Login Overlay screen -->
+    <div class="login-overlay" id="loginOverlay">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-icon" style="width: 54px; height: 54px; margin: 0 auto; border-radius: var(--radius-md);">
+                    <i data-lucide="graduation-cap" style="width: 32px; height: 32px;"></i>
+                </div>
+                <h2>MTSD SCORE</h2>
+                <p>Sila masukkan kata laluan untuk mengakses sistem</p>
+            </div>
+            
+            <form id="loginForm" style="display: flex; flex-direction: column; gap: 14px;">
+                <div class="login-input-wrapper">
+                    <i data-lucide="lock" class="login-input-icon"></i>
+                    <input type="password" id="loginPassword" class="login-input" placeholder="Kata laluan" autocomplete="current-password" required>
+                    <button type="button" class="btn-toggle-password" id="togglePasswordBtn" aria-label="Tunjuk/Sembunyi kata laluan">
+                        <i data-lucide="eye" id="eyeIcon" style="width: 16px; height: 16px;"></i>
+                        <i data-lucide="eye-off" id="eyeOffIcon" style="display: none; width: 16px; height: 16px;"></i>
+                    </button>
+                </div>
+                
+                <div class="login-error" id="loginError">Kata laluan salah. Sila cuba lagi.</div>
+                
+                <button type="submit" class="login-btn">
+                    <span>Masuk</span>
+                    <i data-lucide="log-in" style="width: 16px; height: 16px;"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Spinner loading state screen -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <h2 style="font-weight: 700; font-size: 1.2rem;">Memuatkan Analisis Keputusan...</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 8px;">Memproses data interaktif</p>
+    </div>
+
+    <!-- Container for Printing -->
+    <div class="print-container-wrapper" id="printContainer" style="display: none;"></div>
+
+    <div class="container">
+        <!-- Dashboard Header -->
+        <header>
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i data-lucide="graduation-cap" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>MTSD SCORE</h1>
+                    <p>Sistem Analisis & Kedudukan Akademik Pelajar</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-theme" id="logoutBtn" style="display: none;" title="Log Keluar" aria-label="Log Keluar">
+                    <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+                </button>
+                <button class="btn-theme" id="themeToggleBtn" aria-label="Tukar Tema">
+                    <i data-lucide="sun" id="themeSunIcon" style="display: none; width: 18px; height: 18px;"></i>
+                    <i data-lucide="moon" id="themeMoonIcon" style="width: 18px; height: 18px;"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Filter Panel -->
+        <section class="filter-panel">
+            <!-- Search field -->
+            <div class="filter-group">
+                <label for="searchFilter" class="filter-label">
+                    <i data-lucide="search" style="width: 12px; height: 12px;"></i> Cari Pelajar
+                </label>
+                <div class="input-search-wrapper">
+                    <i data-lucide="search" class="input-search-icon"></i>
+                    <input type="text" id="searchFilter" placeholder="Masukkan nama pelajar..." class="filter-input filter-input-search">
+                </div>
+            </div>
+
+            <!-- Batch selector -->
+            <div class="filter-group">
+                <label for="batchFilter" class="filter-label">
+                    <i data-lucide="calendar" style="width: 12px; height: 12px;"></i> Kohort / Tahun
+                </label>
+                <select id="batchFilter" class="filter-input"></select>
+            </div>
+
+            <!-- Form selector -->
+            <div class="filter-group">
+                <label for="formFilter" class="filter-label">
+                    <i data-lucide="book-open" style="width: 12px; height: 12px;"></i> Tingkatan
+                </label>
+                <select id="formFilter" class="filter-input"></select>
+            </div>
+
+            <!-- Exam selector -->
+            <div class="filter-group">
+                <label for="examFilter" class="filter-label">
+                    <i data-lucide="award" style="width: 12px; height: 12px;"></i> Peperiksaan
+                </label>
+                <select id="examFilter" class="filter-input"></select>
+            </div>
+
+            <!-- Gender selector -->
+            <div class="filter-group">
+                <label for="genderFilter" class="filter-label">
+                    <i data-lucide="users" style="width: 12px; height: 12px;"></i> Jantina
+                </label>
+                <select id="genderFilter" class="filter-input"></select>
+            </div>
+
+            <!-- Favourites toggle -->
+            <div class="filter-group">
+                <label for="favouritesFilter" class="filter-label">
+                    <i data-lucide="star" style="width: 12px; height: 12px;"></i> Pelajar
+                </label>
+                <div style="display: flex; align-items: center; height: 32px;">
+                    <input type="checkbox" id="favouritesFilter" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);">
+                    <label for="favouritesFilter" style="font-size: 0.85rem; margin-left: 6px; cursor: pointer; user-select: none;">Kegemaran Sahaja</label>
+                </div>
+            </div>
+
+            <!-- Reset Filters -->
+            <div>
+                <button class="btn-clear" id="clearFiltersBtn">
+                    <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i> Reset
+                </button>
+            </div>
+        </section>
+
+        <!-- Stats Overview Cards -->
+        <section class="stats-grid">
+            <!-- Total Students Card -->
+            <div class="stats-card">
+                <div class="stats-icon-wrapper">
+                    <i data-lucide="user-check" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div class="stats-info">
+                    <span class="stats-label">Jumlah Pelajar</span>
+                    <span class="stats-value" id="statTotalStudents">0</span>
+                    <span class="stats-subtext" id="statTotalSubtext">Mengikut tapisan aktif</span>
+                </div>
+            </div>
+
+            <!-- Cohort Average Card -->
+            <div class="stats-card">
+                <div class="stats-icon-wrapper" style="background: rgba(16, 185, 129, 0.15); color: var(--success);">
+                    <i data-lucide="bar-chart-2" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div class="stats-info">
+                    <span class="stats-label">Purata Markah</span>
+                    <span class="stats-value" id="statCohortAverage">0.00%</span>
+                    <span class="stats-subtext" id="statAverageSubtext">Purata keseluruhan kohort</span>
+                </div>
+            </div>
+
+            <!-- Top Student Card -->
+            <div class="stats-card">
+                <div class="stats-icon-wrapper" style="background: rgba(245, 158, 11, 0.15); color: var(--color-c);">
+                    <i data-lucide="crown" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div class="stats-info">
+                    <span class="stats-label">Pelajar Terbaik</span>
+                    <span class="stats-value" id="statTopStudentName" style="font-size: 1.1rem; line-height: 1.2; margin-top: 8px;">N/A</span>
+                    <span class="stats-subtext" id="statTopStudentScore">Purata: 0.00%</span>
+                </div>
+            </div>
+
+            <!-- Pass Rate Card -->
+            <div class="stats-card">
+                <div class="stats-icon-wrapper" style="background: rgba(6, 182, 212, 0.15); color: var(--color-b);">
+                    <i data-lucide="trending-up" style="width: 24px; height: 24px;"></i>
+                </div>
+                <div class="stats-info">
+                    <span class="stats-label">Kadar Kelulusan</span>
+                    <span class="stats-value" id="statPassRate">0.00%</span>
+                    <span class="stats-subtext" id="statPassRateSubtext">Purata markah &ge; 40</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Workspace: Tabs -->
+        <section class="tab-section">
+            <div class="tabs-header">
+                <button class="tab-btn active" data-tab="rankingsTab">
+                    <i data-lucide="trophy" style="width: 16px; height: 16px;"></i> Kedudukan Pelajar
+                </button>
+                <button class="tab-btn" data-tab="subjectsTab">
+                    <i data-lucide="book-marked" style="width: 16px; height: 16px;"></i> Analisis Subjek
+                </button>
+                <button class="tab-btn" data-tab="trendsTab">
+                    <i data-lucide="line-chart" style="width: 16px; height: 16px;"></i> Trend Peperiksaan
+                </button>
+            </div>
+
+            <!-- Tab 1: Rankings Table -->
+            <div class="tab-content active" id="rankingsTab">
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th id="thRank">No. Ked <span class="sort-icon"><i data-lucide="arrow-down-narrow-wide" style="width: 12px; height: 12px;"></i></span></th>
+                                <th id="thName">Nama Pelajar <span class="sort-icon"><i data-lucide="chevrons-up-down" style="width: 12px; height: 12px;"></i></span></th>
+                                <th id="thGender">Jantina <span class="sort-icon"><i data-lucide="chevrons-up-down" style="width: 12px; height: 12px;"></i></span></th>
+                                <th>Ringkasan Gred</th>
+                                <th id="thAverage">Purata Markah (%) <span class="sort-icon"><i data-lucide="chevrons-up-down" style="width: 12px; height: 12px;"></i></span></th>
+                                <th id="thGpp">Gred Purata (GPP) <span class="sort-icon"><i data-lucide="chevrons-up-down" style="width: 12px; height: 12px;"></i></span></th>
+                                <th>Keputusan</th>
+                                <th class="no-print" style="width: 100px;">Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardBody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="leaderboardEmptyState" style="display: none;">
+                    <div class="empty-state">
+                        <i data-lucide="search-code" class="empty-state-icon"></i>
+                        <h3>Tiada rekod dijumpai</h3>
+                        <p>Tiada data pelajar yang memenuhi gabungan tapisan di atas. Sila cuba pilih penapis yang berbeza.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Subject Performance -->
+            <div class="tab-content" id="subjectsTab">
+                <!-- Bar Chart comparing all subjects -->
+                <div style="position: relative; height: 200px; width: 100%; margin-bottom: 20px; background: rgba(0,0,0,0.15); padding: 15px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <canvas id="subjectsCompareChart"></canvas>
+                </div>
+
+                <div class="subjects-grid" id="subjectsGrid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+                <div id="subjectsEmptyState" style="display: none;">
+                    <div class="empty-state">
+                        <i data-lucide="book-x" class="empty-state-icon"></i>
+                        <h3>Tiada analisis subjek tersedia</h3>
+                        <p>Sila pilih gabungan penapis yang mengandungi data.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Trends Comparison -->
+            <div class="tab-content" id="trendsTab">
+                <div class="trends-grid">
+                    <!-- Line Chart showing exam-to-exam progression -->
+                    <div class="trends-card">
+                        <h3><i data-lucide="trending-up" style="color: var(--primary-light); width: 18px; height: 18px;"></i> Analisis Aliran Purata Kohort</h3>
+                        <div style="position: relative; height: 320px; width: 100%; margin-top: 10px;">
+                            <canvas id="examProgressionChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Comparison table -->
+                    <div class="trends-card">
+                        <h3><i data-lucide="grid" style="color: var(--color-b); width: 18px; height: 18px;"></i> Perbandingan Peperiksaan</h3>
+                        <div class="table-responsive" style="margin-top: 10px;">
+                            <table class="trend-stats-table">
+                                <thead>
+                                    <tr>
+                                        <th>Peperiksaan</th>
+                                        <th>Pelajar</th>
+                                        <th>Purata (%)</th>
+                                        <th>Lulus (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="trendComparisonBody">
+                                    <!-- Populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Student Detail Modal Overlay -->
+    <div class="modal-overlay" id="studentDetailModal">
+        <div class="modal-container" id="studentModalContent">
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <div class="modal-student-info">
+                    <h2 class="modal-student-name" style="display: flex; align-items: center; gap: 8px;">
+                        <span id="modalName">NAMA PELAJAR</span>
+                        <span class="btn-favourite-modal" id="modalFavBtn" title="Tanda sebagai kegemaran">
+                            <i data-lucide="star" style="width: 18px; height: 18px;"></i>
+                        </span>
+                    </h2>
+                    <div class="modal-student-meta">
+                        <span class="modal-meta-pill" id="modalMetaClass">Tingkatan 1</span>
+                        <span class="modal-meta-pill" id="modalMetaBatch">KOHORT 2024</span>
+                        <span class="modal-meta-pill" id="modalMetaGender">LELAKI</span>
+                        <span class="modal-meta-pill" id="modalMetaExam">UPP1</span>
+                    </div>
+                </div>
+                <button class="modal-close-btn" id="modalCloseX" aria-label="Tutup modal">
+                    <i data-lucide="x" style="width: 24px; height: 24px;"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="modal-body">
+                <!-- Left panel: Performance table -->
+                <div class="modal-card">
+                    <div class="modal-card-title">
+                        <i data-lucide="list-todo" style="color: var(--primary-light); width: 18px; height: 18px;"></i> Keputusan Akademik
+                    </div>
+                    
+                    <!-- Student stats counters inside modal -->
+                    <div class="modal-student-stats">
+                        <div class="modal-stat-box">
+                            <span class="modal-stat-label">Kedudukan</span>
+                            <span class="modal-stat-value" id="modalStatRank" style="color: var(--primary-light);">#0</span>
+                        </div>
+                        <div class="modal-stat-box">
+                            <span class="modal-stat-label">Purata Markah</span>
+                            <span class="modal-stat-value" id="modalStatAverage">0.00%</span>
+                        </div>
+                        <div class="modal-stat-box">
+                            <span class="modal-stat-label">Gred Purata (GPP)</span>
+                            <span class="modal-stat-value" id="modalStatGPP">0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="modal-table">
+                            <thead>
+                                <tr>
+                                    <th>Kod</th>
+                                    <th>Mata Pelajaran</th>
+                                    <th style="text-align: center;">Markah</th>
+                                    <th style="text-align: center;">Gred</th>
+                                    <th style="text-align: center;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modalSubjectsBody">
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right panel: Comparison / Charts & Grades distribution -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- Radar/Bar Chart comparing student to class average -->
+                    <div class="modal-card" style="flex: 1; display: flex; flex-direction: column;">
+                        <div class="modal-card-title">
+                            <i data-lucide="activity" style="color: var(--success); width: 18px; height: 18px;"></i> Profil Kekuatan & Kelemahan
+                        </div>
+                        <div style="position: relative; flex: 1; min-height: 220px; width: 100%; display: flex; align-items: center; justify-content: center;">
+                            <canvas id="studentRadarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Grades Summary breakdown -->
+                    <div class="modal-card">
+                        <div class="modal-card-title">
+                            <i data-lucide="pie-chart" style="color: var(--color-c); width: 18px; height: 18px;"></i> Ringkasan Gred Diperolehi
+                        </div>
+                        <div class="grade-counter-grid" id="modalGradesBreakdown">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button class="btn-modal btn-modal-close" id="modalCloseBtn">
+                    <i data-lucide="corner-up-left" style="width: 16px; height: 16px;"></i> Kembali
+                </button>
+                <button class="btn-modal btn-modal-print" id="modalPrintBtn">
+                    <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Cetak Slip Keputusan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Frontend logic script -->
+    <script>
+        // State variables
+        let appState = {
+            rawData: null,
+            filteredStudents: [],
+            activeFilters: {
+                search: '',
+                batch: '',
+                form: '',
+                exam: '',
+                gender: '',
+                favouritesOnly: false
+            },
+            favourites: JSON.parse(localStorage.getItem('mtsd-favourites') || '[]'),
+            currentSort: {
+                field: 'average', // default sort field
+                order: 'desc'     // default sort order
+            },
+            activeTab: 'rankingsTab',
+            theme: 'dark',
+            charts: {
+                radar: null,
+                bar: null,
+                progression: null
+            }
+        };
+
+        // Static references
+        const subjectCodeMap = {
+            'BM': 'Bahasa Melayu',
+            'BI': 'Bahasa Inggeris',
+            'SEJ': 'Sejarah',
+            'GEO': 'Geografi',
+            'BA': 'Bahasa Arab',
+            'PI': 'Pendidikan Islam',
+            'MATE': 'Matematik',
+            'SNS': 'Sains',
+            'RBT': 'Reka Bentuk & Teknologi',
+            'HQ': 'Hifz Al-Quran',
+            'MQ': 'Maharat Al-Quran',
+            'FEQ': 'Feqah',
+            'HAD': 'Hadis',
+            'TAU': 'Tauhid',
+            'TAF': 'Tafsir',
+            'PJK': 'Pendidikan Jasmani & Kesihatan',
+            'PSV': 'Pendidikan Seni Visual'
+        };
+
+        // Favourites helper functions
+        function isFavourite(name) {
+            return appState.favourites.includes(name);
+        }
+
+        function toggleFavourite(name) {
+            const idx = appState.favourites.indexOf(name);
+            if (idx > -1) {
+                appState.favourites.splice(idx, 1);
+            } else {
+                appState.favourites.push(name);
+            }
+            localStorage.setItem('mtsd-favourites', JSON.stringify(appState.favourites));
+            
+            // Re-render
+            applyFiltersAndRender();
+            
+            // Update detail modal toggle if open
+            updateModalFavBtnState(name);
+        }
+
+        function updateModalFavBtnState(name) {
+            const modalFavBtn = document.getElementById('modalFavBtn');
+            if (modalFavBtn && document.getElementById('modalName').textContent === name) {
+                if (isFavourite(name)) {
+                    modalFavBtn.classList.add('active');
+                } else {
+                    modalFavBtn.classList.remove('active');
+                }
+            }
+        }
+
+        // Initialize App on DOM Content Loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            setupEventListeners();
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+            checkLogin();
+        });
+
+        // Check login status
+        function checkLogin() {
+            const isLoggedIn = localStorage.getItem('mtsd_logged_in') === 'true';
+            const loginOverlay = document.getElementById('loginOverlay');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            if (isLoggedIn) {
+                // User is logged in, hide overlay and render data
+                if (loginOverlay) {
+                    loginOverlay.style.opacity = '0';
+                    loginOverlay.style.visibility = 'hidden';
+                    setTimeout(() => {
+                        loginOverlay.style.display = 'none';
+                    }, 400);
+                }
+                if (logoutBtn) {
+                    logoutBtn.style.display = 'inline-flex';
+                }
+                loadStaticDashboardData();
+            } else {
+                // User is not logged in, keep login visible and hide dashboard elements
+                if (loginOverlay) {
+                    loginOverlay.style.display = 'flex';
+                    loginOverlay.style.opacity = '1';
+                    loginOverlay.style.visibility = 'visible';
+                }
+                if (logoutBtn) {
+                    logoutBtn.style.display = 'none';
+                }
+                
+                // Hide loadingOverlay if it's there
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+
+                // Add login specific event listeners
+                setupLoginListeners();
+            }
+        }
+
+        // Setup login page event listeners
+        function setupLoginListeners() {
+            const loginForm = document.getElementById('loginForm');
+            const loginPassword = document.getElementById('loginPassword');
+            const loginError = document.getElementById('loginError');
+            const togglePasswordBtn = document.getElementById('togglePasswordBtn');
+            const eyeIcon = document.getElementById('eyeIcon');
+            const eyeOffIcon = document.getElementById('eyeOffIcon');
+
+            if (loginForm && !loginForm.dataset.listenerAttached) {
+                loginForm.dataset.listenerAttached = 'true';
+                
+                // Force focus on password input
+                setTimeout(() => loginPassword.focus(), 100);
+
+                loginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const password = loginPassword.value;
+                    if (password.trim() === 'mtsd') {
+                        // Success!
+                        loginError.style.display = 'none';
+                        localStorage.setItem('mtsd_logged_in', 'true');
+                        
+                        // Re-initialize dynamic lucide icons before showing
+                        if (window.lucide) {
+                            window.lucide.createIcons();
+                        }
+                        
+                        checkLogin();
+                    } else {
+                        // Error
+                        loginError.style.display = 'block';
+                        loginPassword.value = '';
+                        loginPassword.focus();
+                        
+                        // Re-trigger shake animation
+                        loginError.style.animation = 'none';
+                        loginError.offsetHeight; /* trigger reflow */
+                        loginError.style.animation = null; 
+                    }
+                });
+            }
+
+            if (togglePasswordBtn && !togglePasswordBtn.dataset.listenerAttached) {
+                togglePasswordBtn.dataset.listenerAttached = 'true';
+                togglePasswordBtn.addEventListener('click', () => {
+                    if (loginPassword.type === 'password') {
+                        loginPassword.type = 'text';
+                        eyeIcon.style.display = 'none';
+                        eyeOffIcon.style.display = 'inline-block';
+                    } else {
+                        loginPassword.type = 'password';
+                        eyeIcon.style.display = 'inline-block';
+                        eyeOffIcon.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Initialize Theme from localStorage or browser preferences
+        function initTheme() {
+            const savedTheme = localStorage.getItem('mtsd-theme') || 'dark';
+            setTheme(savedTheme);
+        }
+
+        function setTheme(theme) {
+            appState.theme = theme;
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('mtsd-theme', theme);
+            
+            const sunIcon = document.getElementById('themeSunIcon');
+            const moonIcon = document.getElementById('themeMoonIcon');
+
+            if (theme === 'light') {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'inline-block';
+            } else {
+                sunIcon.style.display = 'inline-block';
+                moonIcon.style.display = 'none';
+            }
+            
+            // Re-render charts to match new theme colors if necessary
+            if (appState.rawData) {
+                renderCharts();
+            }
+        }
+
+        // Load compiled static data from window context
+        function loadStaticDashboardData() {
+            if (typeof MTSD_DATA === 'undefined') {
+                console.error("data.js is not loaded properly.");
+                alert("Fail 'data.js' tidak ditemui. Sila pastikan anda telah menjana data.js atau fail data.js berada dalam direktori yang betul.");
+                return;
+            }
+
+            appState.rawData = MTSD_DATA;
+            
+            // Setup filters selection values
+            populateFilterDropdowns(MTSD_DATA);
+            
+            // Set default filter values to the first item in the list (latest for exam)
+            appState.activeFilters.batch = MTSD_DATA.batches[0] || '';
+            appState.activeFilters.form = MTSD_DATA.forms[0] || '';
+            appState.activeFilters.exam = MTSD_DATA.exams[MTSD_DATA.exams.length - 1] || '';
+            // Keep gender default as empty/all
+            
+            // Sync inputs with state
+            document.getElementById('batchFilter').value = appState.activeFilters.batch;
+            document.getElementById('formFilter').value = appState.activeFilters.form;
+            document.getElementById('examFilter').value = appState.activeFilters.exam;
+            document.getElementById('genderFilter').value = appState.activeFilters.gender;
+            document.getElementById('favouritesFilter').checked = appState.activeFilters.favouritesOnly;
+
+            // Remove loading overlay
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.style.display = 'none', 400);
+
+            // Render Dashboard
+            applyFiltersAndRender();
+            lucide.createIcons();
+        }
+
+        // Setup dynamic filter dropdown selections
+        function populateFilterDropdowns(data) {
+            const populate = (id, list, placeholder) => {
+                const el = document.getElementById(id);
+                el.innerHTML = '';
+                if (placeholder) {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = placeholder;
+                    el.appendChild(opt);
+                }
+                list.forEach(val => {
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.textContent = getLabelForFilter(id, val);
+                    el.appendChild(opt);
+                });
+            };
+
+            populate('batchFilter', data.batches);
+            populate('formFilter', data.forms);
+            populate('examFilter', data.exams);
+            populate('genderFilter', data.genders, 'Semua Jantina');
+        }
+
+        // Clean user facing labels for filters
+        function getLabelForFilter(field, val) {
+            if (field === 'formFilter') {
+                return 'Tingkatan ' + val.replace('F', '');
+            }
+            if (field === 'examFilter') {
+                return getExamLabel(val);
+            }
+            if (field === 'genderFilter') {
+                return val === 'L' ? 'Lelaki (L)' : (val === 'P' ? 'Perempuan (P)' : val);
+            }
+            return val;
+        }
+
+        // Static mapping for exams
+        function getExamLabel(val) {
+            const map = {
+                '1': 'UPP1',
+                '2': 'UPP2',
+                '3': 'UASA'
+            };
+            return map[val] || 'Peperiksaan ' + val;
+        }
+
+        // Bind DOM events
+        function setupEventListeners() {
+            // Theme toggle
+            document.getElementById('themeToggleBtn').addEventListener('click', () => {
+                setTheme(appState.theme === 'dark' ? 'light' : 'dark');
+            });
+
+            // Logout click
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    localStorage.removeItem('mtsd_logged_in');
+                    location.reload();
+                });
+            }
+
+            // Filters changed
+            const filters = ['searchFilter', 'batchFilter', 'formFilter', 'examFilter', 'genderFilter'];
+            filters.forEach(id => {
+                const fieldName = id.replace('Filter', '');
+                document.getElementById(id).addEventListener('input', (e) => {
+                    appState.activeFilters[fieldName] = e.target.value;
+                    applyFiltersAndRender();
+                });
+            });
+
+            // Favourites Filter change
+            document.getElementById('favouritesFilter').addEventListener('change', (e) => {
+                appState.activeFilters.favouritesOnly = e.target.checked;
+                applyFiltersAndRender();
+            });
+
+            // Modal Fav Button toggle click
+            document.getElementById('modalFavBtn').addEventListener('click', () => {
+                const name = document.getElementById('modalName').textContent;
+                toggleFavourite(name);
+            });
+
+            // Reset filters
+            document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+                document.getElementById('searchFilter').value = '';
+                appState.activeFilters.search = '';
+                
+                // Keep batch, form, and exam as first loaded items, reset gender and favourites to all
+                if (appState.rawData) {
+                    appState.activeFilters.batch = appState.rawData.batches[0] || '';
+                    appState.activeFilters.form = appState.rawData.forms[0] || '';
+                    appState.activeFilters.exam = appState.rawData.exams[appState.rawData.exams.length - 1] || '';
+                    appState.activeFilters.gender = '';
+                    appState.activeFilters.favouritesOnly = false;
+                    
+                    document.getElementById('batchFilter').value = appState.activeFilters.batch;
+                    document.getElementById('formFilter').value = appState.activeFilters.form;
+                    document.getElementById('examFilter').value = appState.activeFilters.exam;
+                    document.getElementById('genderFilter').value = '';
+                    document.getElementById('favouritesFilter').checked = false;
+                }
+                applyFiltersAndRender();
+            });
+
+            // Tab toggles
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    // Update active button classes
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Show content
+                    const tabId = btn.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(cont => {
+                        cont.classList.remove('active');
+                    });
+                    document.getElementById(tabId).classList.add('active');
+                    appState.activeTab = tabId;
+                    
+                    // Render specific visual elements (like charts) upon opening a tab
+                    renderCharts();
+                    lucide.createIcons();
+                });
+            });
+
+            // Table Sorting Columns header events
+            const sortingHeaders = [
+                { id: 'thRank', field: 'rank' },
+                { id: 'thName', field: 'name' },
+                { id: 'thGender', field: 'gender' },
+                { id: 'thAverage', field: 'average' },
+                { id: 'thGpp', field: 'gpp' }
+            ];
+
+            sortingHeaders.forEach(sh => {
+                document.getElementById(sh.id).addEventListener('click', () => {
+                    toggleSort(sh.field);
+                });
+            });
+
+            // Modal Close hooks
+            document.getElementById('modalCloseX').addEventListener('click', closeModal);
+            document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+            document.getElementById('studentDetailModal').addEventListener('click', (e) => {
+                if (e.target.id === 'studentDetailModal') {
+                    closeModal();
+                }
+            });
+
+            // Print hook
+            document.getElementById('modalPrintBtn').addEventListener('click', printReportCard);
+        }
+
+        // Toggle table sorting
+        function toggleSort(field) {
+            if (appState.currentSort.field === field) {
+                // toggle direction
+                appState.currentSort.order = appState.currentSort.order === 'asc' ? 'desc' : 'asc';
+            } else {
+                appState.currentSort.field = field;
+                // rank/average default sort is desc, others asc
+                appState.currentSort.order = (field === 'average' || field === 'rank') ? 'desc' : 'asc';
+            }
+            sortStudents();
+            renderLeaderboard();
+            updateSortingHeadersUI();
+        }
+
+        // Sort students list based on appState.currentSort
+        function sortStudents() {
+            appState.filteredStudents.sort((a, b) => {
+                let valA = a[appState.currentSort.field];
+                let valB = b[appState.currentSort.field];
+                
+                // Special field rank calculation
+                if (appState.currentSort.field === 'rank') {
+                    valA = a.calculatedRank;
+                    valB = b.calculatedRank;
+                }
+
+                if (typeof valA === 'string') {
+                    valA = valA.toLowerCase();
+                    valB = valB.toLowerCase();
+                }
+
+                if (valA < valB) {
+                    return appState.currentSort.order === 'asc' ? -1 : 1;
+                }
+                if (valA > valB) {
+                    return appState.currentSort.order === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+
+        // Update indicator icons on columns
+        function updateSortingHeadersUI() {
+            const headers = [
+                { id: 'thRank', field: 'rank' },
+                { id: 'thName', field: 'name' },
+                { id: 'thGender', field: 'gender' },
+                { id: 'thAverage', field: 'average' },
+                { id: 'thGpp', field: 'gpp' }
+            ];
+
+            headers.forEach(h => {
+                const el = document.getElementById(h.id);
+                const iconSpan = el.querySelector('.sort-icon');
+                if (appState.currentSort.field === h.field) {
+                    iconSpan.innerHTML = appState.currentSort.order === 'asc' 
+                        ? `<i data-lucide="arrow-up-narrow-wide" style="width: 12px; height: 12px; color: var(--primary-light);"></i>`
+                        : `<i data-lucide="arrow-down-narrow-wide" style="width: 12px; height: 12px; color: var(--primary-light);"></i>`;
+                } else {
+                    iconSpan.innerHTML = `<i data-lucide="chevrons-up-down" style="width: 12px; height: 12px;"></i>`;
+                }
+            });
+            lucide.createIcons();
+        }
+
+        // Core filter and render pipeline
+        function applyFiltersAndRender() {
+            if (!appState.rawData) return;
+
+            const filters = appState.activeFilters;
+            
+            // 1. Filter raw data list by class/cohort (batch, form, exam)
+            let cohortStudents = appState.rawData.students.filter(student => {
+                if (filters.batch && student.batch != filters.batch) return false;
+                if (filters.form && student.form != filters.form) return false;
+                if (filters.exam && student.exam != filters.exam) return false;
+                return true;
+            });
+
+            // 2. Calculate active ranks in this overall class/cohort before applying sub-filters
+            // Rank is computed based on Average Mark descending
+            cohortStudents.sort((a, b) => b.average - a.average);
+            
+            let currentRank = 0;
+            let lastAvg = -1;
+            let sameAvgCount = 0;
+            
+            cohortStudents.forEach((stud) => {
+                if (stud.average !== lastAvg) {
+                    currentRank += 1 + sameAvgCount;
+                    sameAvgCount = 0;
+                    lastAvg = stud.average;
+                } else {
+                    sameAvgCount++;
+                }
+                stud.calculatedRank = currentRank;
+            });
+
+            // 3. Filter by search, gender, and favourites to get the final list to render
+            let filtered = cohortStudents.filter(student => {
+                // Favourites filter
+                if (filters.favouritesOnly && !isFavourite(student.name)) return false;
+                // Gender filter
+                if (filters.gender && student.gender != filters.gender) return false;
+                // Search filter
+                if (filters.search && !student.name.toLowerCase().includes(filters.search.toLowerCase())) return false;
+                return true;
+            });
+
+            appState.filteredStudents = filtered;
+
+            // Apply currently active sort
+            sortStudents();
+
+            // Run rendering functions
+            renderOverviewStats();
+            renderLeaderboard();
+            renderSubjectAnalytics();
+            renderExamProgressionTrend();
+            
+            // Load/update charts
+            renderCharts();
+        }
+
+        // Render overview analytics cards
+        function renderOverviewStats() {
+            const count = appState.filteredStudents.length;
+            document.getElementById('statTotalStudents').textContent = count;
+
+            if (count === 0) {
+                document.getElementById('statCohortAverage').textContent = '0.00%';
+                document.getElementById('statTopStudentName').textContent = 'Tiada Data';
+                document.getElementById('statTopStudentScore').textContent = 'Purata: 0.00%';
+                document.getElementById('statPassRate').textContent = '0.00%';
+                return;
+            }
+
+            // Averages
+            const totalSum = appState.filteredStudents.reduce((sum, item) => sum + item.average, 0);
+            const cohortAverage = totalSum / count;
+            document.getElementById('statCohortAverage').textContent = cohortAverage.toFixed(2) + '%';
+
+            // Top student (always highest average)
+            const sortedByAvg = [...appState.filteredStudents].sort((a, b) => b.average - a.average);
+            const topStudent = sortedByAvg[0];
+            document.getElementById('statTopStudentName').textContent = truncateText(topStudent.name, 22);
+            document.getElementById('statTopStudentName').title = topStudent.name;
+            document.getElementById('statTopStudentScore').textContent = `Purata: ${topStudent.average.toFixed(2)}% (GPP: ${topStudent.gpp.toFixed(2)})`;
+
+            // Pass rate (Count of students with average score >= 40)
+            const passCount = appState.filteredStudents.filter(s => s.average >= 40).length;
+            const passRate = (passCount / count) * 100;
+            document.getElementById('statPassRate').textContent = passRate.toFixed(2) + '%';
+            document.getElementById('statPassRateSubtext').textContent = `${passCount} drpd ${count} pelajar lulus`;
+        }
+
+        // Truncate long strings nicely
+        function truncateText(str, n) {
+            return (str.length > n) ? str.substr(0, n - 1) + '...' : str;
+        }
+
+        // Render Rankings Table
+        function renderLeaderboard() {
+            const tbody = document.getElementById('leaderboardBody');
+            const emptyState = document.getElementById('leaderboardEmptyState');
+            tbody.innerHTML = '';
+
+            if (appState.filteredStudents.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            appState.filteredStudents.forEach(student => {
+                const tr = document.createElement('tr');
+                tr.addEventListener('click', () => openStudentDetailModal(student));
+
+                // Rank column styling
+                const rank = student.calculatedRank;
+                let rankHtml = `<span class="rank-badge">${rank}</span>`;
+                if (rank === 1) rankHtml = `<span class="rank-badge rank-gold">1</span>`;
+                else if (rank === 2) rankHtml = `<span class="rank-badge rank-silver">2</span>`;
+                else if (rank === 3) rankHtml = `<span class="rank-badge rank-bronze">3</span>`;
+
+                // Grades summary HTML
+                let gradesHtml = '<div class="grades-badge-list">';
+                const grades = student.grades_count;
+                Object.keys(grades).forEach(gr => {
+                    if (grades[gr] > 0) {
+                        gradesHtml += `<span class="grade-badge grade-${gr.toLowerCase()}">${grades[gr]}${gr}</span>`;
+                    }
+                });
+                gradesHtml += '</div>';
+
+                // Status pass or fail
+                const statusText = student.average >= 40 ? 'LULUS' : 'GAGAL';
+                const statusClass = student.average >= 40 ? 'score-pass' : 'score-fail';
+
+                tr.innerHTML = `
+                    <td class="td-rank">${rankHtml}</td>
+                    <td class="td-name">
+                        <span class="btn-favourite ${isFavourite(student.name) ? 'active' : ''}" data-name="${student.name}" title="Tanda sebagai kegemaran">
+                            <i data-lucide="star" style="width: 13px; height: 13px;"></i>
+                        </span>
+                        ${student.name}
+                    </td>
+                    <td class="td-gender">${student.gender === 'L' ? 'Lelaki' : 'Perempuan'}</td>
+                    <td>${gradesHtml}</td>
+                    <td class="td-score ${statusClass}">${student.average.toFixed(2)}%</td>
+                    <td class="td-gpp">${student.gpp.toFixed(2)}</td>
+                    <td class="td-score ${statusClass}" style="font-size: 0.8rem; font-weight: 800;">${statusText}</td>
+                    <td class="no-print">
+                        <button class="btn-view">
+                            <i data-lucide="eye" style="width: 14px; height: 14px;"></i> Info
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                // Stop row click propagation when star clicked
+                const favBtn = tr.querySelector('.btn-favourite');
+                favBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleFavourite(student.name);
+                });
+            });
+            lucide.createIcons();
+        }
+
+        // Render Subject Performance Analytics List
+        function renderSubjectAnalytics() {
+            const grid = document.getElementById('subjectsGrid');
+            const emptyState = document.getElementById('subjectsEmptyState');
+            grid.innerHTML = '';
+
+            if (appState.filteredStudents.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            // Gather all active subjects from current filtered student list
+            const subjectStats = {};
+            
+            appState.filteredStudents.forEach(stud => {
+                Object.keys(stud.scores).forEach(subCode => {
+                    const score = stud.scores[subCode];
+                    if (score !== null && score !== '') {
+                        if (!subjectStats[subCode]) {
+                            subjectStats[subCode] = {
+                                sum: 0,
+                                count: 0,
+                                max: -1,
+                                min: 999,
+                                passCount: 0,
+                                grades: { A:0, B:0, C:0, D:0, E:0, F:0 }
+                            };
+                        }
+
+                        const numericScore = parseFloat(score);
+                        subjectStats[subCode].sum += numericScore;
+                        subjectStats[subCode].count++;
+                        
+                        if (numericScore > subjectStats[subCode].max) subjectStats[subCode].max = numericScore;
+                        if (numericScore < subjectStats[subCode].min) subjectStats[subCode].min = numericScore;
+                        
+                        if (numericScore >= 40) {
+                            subjectStats[subCode].passCount++;
+                        }
+
+                        // grade distribution
+                        if (numericScore >= 85) subjectStats[subCode].grades.A++;
+                        else if (numericScore >= 70) subjectStats[subCode].grades.B++;
+                        else if (numericScore >= 60) subjectStats[subCode].grades.C++;
+                        else if (numericScore >= 50) subjectStats[subCode].grades.D++;
+                        else if (numericScore >= 40) subjectStats[subCode].grades.E++;
+                        else subjectStats[subCode].grades.F++;
+                    }
+                });
+            });
+
+            // Populate subject cards
+            Object.keys(subjectStats).forEach(sub => {
+                const stats = subjectStats[sub];
+                const avg = stats.sum / stats.count;
+                const passRate = (stats.passCount / stats.count) * 100;
+                const subFullName = subjectCodeMap[sub] || sub;
+
+                // Grade stack percentages
+                const totalG = stats.count;
+                const aPct = (stats.grades.A / totalG) * 100;
+                const bPct = (stats.grades.B / totalG) * 100;
+                const cPct = (stats.grades.C / totalG) * 100;
+                const dPct = (stats.grades.D / totalG) * 100;
+                const ePct = (stats.grades.E / totalG) * 100;
+                const fPct = (stats.grades.F / totalG) * 100;
+
+                const card = document.createElement('div');
+                card.className = 'subject-card';
+                card.innerHTML = `
+                    <div class="subject-card-header">
+                        <div class="subject-info">
+                            <span class="subject-code">${sub}</span>
+                            <span class="subject-name">${subFullName}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="subject-stats-row">
+                        <div class="sub-stat-item">
+                            <span class="sub-stat-label">Lulus (%)</span>
+                            <span class="sub-stat-value" style="color: var(--success);">${passRate.toFixed(1)}%</span>
+                        </div>
+                        <div class="sub-stat-item">
+                            <span class="sub-stat-label">Min</span>
+                            <span class="sub-stat-value" style="color: var(--color-f);">${stats.min}</span>
+                        </div>
+                        <div class="sub-stat-item">
+                            <span class="sub-stat-label">Max</span>
+                            <span class="sub-stat-value" style="color: var(--primary-light);">${stats.max}</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 2px;">
+                            <span>Taburan Gred Pelajar</span>
+                            <span style="font-weight: 700;">N = ${stats.count}</span>
+                        </div>
+                        <div class="grade-distribution-bar">
+                            <div class="dist-segment" style="width: ${aPct}%; background: var(--color-a);" title="A: ${stats.grades.A}"></div>
+                            <div class="dist-segment" style="width: ${bPct}%; background: var(--color-b);" title="B: ${stats.grades.B}"></div>
+                            <div class="dist-segment" style="width: ${cPct}%; background: var(--color-c);" title="C: ${stats.grades.C}"></div>
+                            <div class="dist-segment" style="width: ${dPct}%; background: var(--color-d);" title="D: ${stats.grades.D}"></div>
+                            <div class="dist-segment" style="width: ${ePct}%; background: var(--color-e);" title="E: ${stats.grades.E}"></div>
+                            <div class="dist-segment" style="width: ${fPct}%; background: var(--color-f);" title="F: ${stats.grades.F}"></div>
+                        </div>
+                    </div>
+
+                    <div class="subject-avg-block">
+                        <span class="subject-avg-label">Purata Markah</span>
+                        <span class="subject-avg-value">${avg.toFixed(2)}%</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Render Cohort Comparison & Trend tables
+        function renderExamProgressionTrend() {
+            if (!appState.rawData) return;
+            
+            const tbody = document.getElementById('trendComparisonBody');
+            tbody.innerHTML = '';
+
+            const currentBatch = appState.activeFilters.batch;
+            const currentForm = appState.activeFilters.form;
+
+            if (!currentBatch || !currentForm) return;
+
+            // Gather values for all exams in this batch & form
+            const examsList = appState.rawData.exams;
+            const examMetrics = [];
+
+            examsList.forEach(exam => {
+                const examStudents = appState.rawData.students.filter(s => 
+                    s.batch == currentBatch && 
+                    s.form == currentForm && 
+                    s.exam == exam
+                );
+
+                if (examStudents.length > 0) {
+                    const count = examStudents.length;
+                    const avgSum = examStudents.reduce((sum, s) => sum + s.average, 0);
+                    const avg = avgSum / count;
+                    const passCount = examStudents.filter(s => s.average >= 40).length;
+                    const passRate = (passCount / count) * 100;
+
+                    examMetrics.push({
+                        exam: exam,
+                        count: count,
+                        average: avg,
+                        passRate: passRate
+                    });
+                }
+            });
+
+            if (examMetrics.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Tiada data tren peperiksaan</td></tr>';
+                return;
+            }
+
+            examMetrics.forEach(metric => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 700;">${getExamLabel(metric.exam)}</td>
+                    <td>${metric.count}</td>
+                    <td style="font-weight: 600;">${metric.average.toFixed(2)}%</td>
+                    <td style="color: var(--success); font-weight: 600;">${metric.passRate.toFixed(2)}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Render all active Charts dynamically (Subject Bar, Cohort Line Progression)
+        function renderCharts() {
+            if (!appState.rawData || appState.filteredStudents.length === 0) return;
+
+            const isDark = appState.theme === 'dark';
+            const labelColor = isDark ? '#94a3b8' : '#475569';
+            const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+
+            // 1. Render Subject Analytics Comparison Tab Bar Chart
+            if (appState.activeTab === 'subjectsTab') {
+                const subjectStats = {};
+                appState.filteredStudents.forEach(stud => {
+                    Object.keys(stud.scores).forEach(sub => {
+                        const val = stud.scores[sub];
+                        if (val !== null && val !== '') {
+                            if (!subjectStats[sub]) {
+                                subjectStats[sub] = { sum: 0, count: 0 };
+                            }
+                            subjectStats[sub].sum += parseFloat(val);
+                            subjectStats[sub].count++;
+                        }
+                    });
+                });
+
+                const labels = [];
+                const data = [];
+                Object.keys(subjectStats).forEach(sub => {
+                    labels.push(sub);
+                    data.push(parseFloat((subjectStats[sub].sum / subjectStats[sub].count).toFixed(2)));
+                });
+
+                if (appState.charts.bar) {
+                    appState.charts.bar.destroy();
+                }
+
+                const ctx = document.getElementById('subjectsCompareChart').getContext('2d');
+                appState.charts.bar = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Purata Markah (%)',
+                            data: data,
+                            backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                padding: 12,
+                                bodyFont: { family: 'Plus Jakarta Sans', size: 13 }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: labelColor, font: { family: 'Plus Jakarta Sans', weight: 600 } }
+                            },
+                            y: {
+                                min: 0,
+                                max: 100,
+                                grid: { color: gridColor },
+                                ticks: { color: labelColor, font: { family: 'Plus Jakarta Sans' } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Render Progression Tab Line Chart
+            if (appState.activeTab === 'trendsTab') {
+                const currentBatch = appState.activeFilters.batch;
+                const currentForm = appState.activeFilters.form;
+
+                const labels = [];
+                const averageData = [];
+                const passRateData = [];
+
+                if (currentBatch && currentForm) {
+                    appState.rawData.exams.forEach(exam => {
+                        const examStudents = appState.rawData.students.filter(s => 
+                            s.batch == currentBatch && 
+                            s.form == currentForm && 
+                            s.exam == exam
+                        );
+
+                        if (examStudents.length > 0) {
+                            labels.push(getExamLabel(exam));
+                            
+                            const count = examStudents.length;
+                            const avgSum = examStudents.reduce((sum, s) => sum + s.average, 0);
+                            averageData.push(parseFloat((avgSum / count).toFixed(2)));
+
+                            const passCount = examStudents.filter(s => s.average >= 40).length;
+                            passRateData.push(parseFloat(((passCount / count) * 100).toFixed(2)));
+                        }
+                    });
+                }
+
+                if (appState.charts.progression) {
+                    appState.charts.progression.destroy();
+                }
+
+                const ctxProg = document.getElementById('examProgressionChart').getContext('2d');
+                appState.charts.progression = new Chart(ctxProg, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Purata Markah (%)',
+                                data: averageData,
+                                borderColor: 'rgba(99, 102, 241, 1)',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                tension: 0.3,
+                                fill: true,
+                                borderWidth: 3,
+                                pointBackgroundColor: 'rgba(99, 102, 241, 1)'
+                            },
+                            {
+                                label: 'Kadar Kelulusan (%)',
+                                data: passRateData,
+                                borderColor: 'rgba(16, 185, 129, 1)',
+                                backgroundColor: 'transparent',
+                                tension: 0.3,
+                                borderDash: [6, 4],
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgba(16, 185, 129, 1)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: labelColor,
+                                    font: { family: 'Plus Jakarta Sans', size: 12, weight: 600 }
+                                }
+                            },
+                            tooltip: {
+                                padding: 12,
+                                bodyFont: { family: 'Plus Jakarta Sans' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: labelColor, font: { family: 'Plus Jakarta Sans', weight: 600 } }
+                            },
+                            y: {
+                                min: 0,
+                                max: 100,
+                                grid: { color: gridColor },
+                                ticks: { color: labelColor, font: { family: 'Plus Jakarta Sans' } }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Open Student Performance Modal
+        function openStudentDetailModal(student) {
+            // Compute student's details in filtered list
+            const modal = document.getElementById('studentDetailModal');
+            
+            // Set details text
+            document.getElementById('modalName').textContent = student.name;
+            document.getElementById('modalMetaClass').textContent = 'Tingkatan ' + student.form.replace('F', '');
+            document.getElementById('modalMetaBatch').textContent = 'KOHORT ' + student.batch;
+            document.getElementById('modalMetaGender').textContent = student.gender === 'L' ? 'LELAKI' : 'PEREMPUAN';
+            document.getElementById('modalMetaExam').textContent = getExamLabel(student.exam).toUpperCase();
+
+            // Set active state for favourite button in modal
+            const modalFavBtn = document.getElementById('modalFavBtn');
+            if (isFavourite(student.name)) {
+                modalFavBtn.classList.add('active');
+            } else {
+                modalFavBtn.classList.remove('active');
+            }
+
+            // Overall Stats
+            document.getElementById('modalStatRank').textContent = '#' + student.calculatedRank;
+            document.getElementById('modalStatAverage').textContent = student.average.toFixed(2) + '%';
+            document.getElementById('modalStatGPP').textContent = student.gpp.toFixed(2);
+
+            // Populate table rows
+            const tbody = document.getElementById('modalSubjectsBody');
+            tbody.innerHTML = '';
+
+            const radarLabels = [];
+            const radarStudentData = [];
+            const radarClassAvgData = [];
+
+            // Calculate class average for each subject in current filters to compare against
+            const subAvgs = {};
+            appState.filteredStudents.forEach(s => {
+                Object.keys(s.scores).forEach(subCode => {
+                    const score = s.scores[subCode];
+                    if (score !== null && score !== '') {
+                        if (!subAvgs[subCode]) subAvgs[subCode] = { sum: 0, count: 0 };
+                        subAvgs[subCode].sum += parseFloat(score);
+                        subAvgs[subCode].count++;
+                    }
+                });
+            });
+
+            // Loop subjects taken by this student
+            Object.keys(student.scores).forEach(sub => {
+                const scoreVal = student.scores[sub];
+                const score = (scoreVal !== null && scoreVal !== '') ? scoreVal : '-';
+                
+                let grade = '-';
+                let gradeClass = '';
+                let statusText = '-';
+                let statusClass = '';
+
+                if (score !== '-') {
+                    const numScore = parseFloat(score);
+                    if (numScore >= 85) { grade = 'A'; gradeClass = 'grade-a'; }
+                    else if (numScore >= 70) { grade = 'B'; gradeClass = 'grade-b'; }
+                    else if (numScore >= 60) { grade = 'C'; gradeClass = 'grade-c'; }
+                    else if (numScore >= 50) { grade = 'D'; gradeClass = 'grade-d'; }
+                    else if (numScore >= 40) { grade = 'E'; gradeClass = 'grade-e'; }
+                    else { grade = 'F'; gradeClass = 'grade-f'; }
+
+                    statusText = numScore >= 40 ? 'Lulus' : 'Gagal';
+                    statusClass = numScore >= 40 ? 'score-pass' : 'score-fail';
+
+                    // Save data for radar chart comparison
+                    radarLabels.push(sub);
+                    radarStudentData.push(numScore);
+                    const avg = subAvgs[sub] ? (subAvgs[sub].sum / subAvgs[sub].count) : 0;
+                    radarClassAvgData.push(parseFloat(avg.toFixed(1)));
+                }
+
+                const subName = subjectCodeMap[sub] || sub;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="font-weight: 700; color: var(--primary-light);">${sub}</td>
+                    <td>${subName}</td>
+                    <td style="text-align: center; font-weight: 700;">${score}</td>
+                    <td style="text-align: center;"><span class="grade-badge ${gradeClass}">${grade}</span></td>
+                    <td style="text-align: center; font-weight: 600; font-size: 0.8rem;" class="${statusClass}">${statusText}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Populate grades distribution counts
+            const gBreakdown = document.getElementById('modalGradesBreakdown');
+            gBreakdown.innerHTML = '';
+            
+            const gCounts = student.grades_count;
+            Object.keys(gCounts).forEach(gKey => {
+                const count = gCounts[gKey];
+                const card = document.createElement('div');
+                card.className = `grade-counter-item grade-${gKey.toLowerCase()}`;
+                card.innerHTML = `
+                    <span class="grade-counter-label">${gKey}</span>
+                    <span class="grade-counter-value">${count}</span>
+                `;
+                gBreakdown.appendChild(card);
+            });
+
+            // Initialize Radar Comparison Chart inside Modal
+            setTimeout(() => {
+                renderStudentRadarChart(radarLabels, radarStudentData, radarClassAvgData);
+            }, 100);
+
+            // Display modal
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // block double scrolls
+            lucide.createIcons();
+        }
+
+        // Render Radar comparison chart inside modal
+        function renderStudentRadarChart(labels, studentData, classAvgData) {
+            if (appState.charts.radar) {
+                appState.charts.radar.destroy();
+            }
+
+            const isDark = appState.theme === 'dark';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)';
+            const angleLineColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            const labelColor = isDark ? '#94a3b8' : '#475569';
+
+            const ctx = document.getElementById('studentRadarChart').getContext('2d');
+            
+            // If there are too few subjects (e.g. less than 3), Radar chart won't look good.
+            // Switch to a horizontal bar chart instead!
+            if (labels.length < 3) {
+                appState.charts.radar = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Markah Pelajar',
+                                data: studentData,
+                                backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                                borderColor: 'rgba(99, 102, 241, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Purata Kelas',
+                                data: classAvgData,
+                                backgroundColor: 'rgba(148, 163, 184, 0.5)',
+                                borderColor: 'rgba(148, 163, 184, 0.8)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: labelColor } }
+                        },
+                        scales: {
+                            x: { min: 0, max: 100, ticks: { color: labelColor }, grid: { color: gridColor } },
+                            y: { ticks: { color: labelColor }, grid: { display: false } }
+                        }
+                    }
+                });
+            } else {
+                appState.charts.radar = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Markah Pelajar',
+                                data: studentData,
+                                backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                                borderColor: 'rgba(99, 102, 241, 1)',
+                                borderWidth: 2,
+                                pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                                pointHoverRadius: 5
+                            },
+                            {
+                                label: 'Purata Kelas',
+                                data: classAvgData,
+                                backgroundColor: 'rgba(148, 163, 184, 0.1)',
+                                borderColor: 'rgba(148, 163, 184, 0.8)',
+                                borderWidth: 1.5,
+                                borderDash: [4, 4],
+                                pointBackgroundColor: 'rgba(148, 163, 184, 1)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: labelColor,
+                                    font: { family: 'Plus Jakarta Sans', size: 11, weight: 600 }
+                                }
+                            }
+                        },
+                        scales: {
+                            r: {
+                                min: 0,
+                                max: 100,
+                                angleLines: { color: angleLineColor },
+                                grid: { color: gridColor },
+                                pointLabels: {
+                                    color: labelColor,
+                                    font: { family: 'Plus Jakarta Sans', size: 11, weight: 700 }
+                                },
+                                ticks: {
+                                    backdropColor: 'transparent',
+                                    color: labelColor,
+                                    showLabelBackdrop: false,
+                                    stepSize: 20
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Close details modal
+        function closeModal() {
+            const modal = document.getElementById('studentDetailModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto'; // restore scrolls
+        }
+
+        // Prepare print slip trigger
+        function printReportCard() {
+            // Copy modal body into print container
+            const printContainer = document.getElementById('printContainer');
+            
+            // Build printable layout with custom headings
+            const originalModalContent = document.getElementById('studentModalContent').cloneNode(true);
+            
+            // Strip print-unfriendly items
+            const closeX = originalModalContent.querySelector('#modalCloseX');
+            if (closeX) closeX.remove();
+            
+            const footer = originalModalContent.querySelector('.modal-footer');
+            if (footer) footer.remove();
+
+            printContainer.innerHTML = '';
+            
+            // Append header details
+            const printHeader = document.createElement('div');
+            printHeader.style.textAlign = 'center';
+            printHeader.style.marginBottom = '25px';
+            printHeader.style.borderBottom = '3px double #000';
+            printHeader.style.paddingBottom = '15px';
+            printHeader.innerHTML = `
+                <h1 style="font-size: 1.6rem; font-weight: 800; text-transform: uppercase;">MAAHAD TAHFIZ SAINS DARUL AMAN (MTSD)</h1>
+                <p style="font-size: 0.9rem; margin-top: 4px;">Taman Tunku Sarina, 06000 Jitra, Kedah Darul Aman</p>
+                <h2 style="font-size: 1.1rem; font-weight: 700; margin-top: 10px; text-decoration: underline;">SLIP KEPUTUSAN PEPERIKSAAN</h2>
+            `;
+            
+            printContainer.appendChild(printHeader);
+            printContainer.appendChild(originalModalContent);
+
+            // Trigger window print
+            window.print();
+        }
+    </script>
+</body>
+</html>
