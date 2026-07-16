@@ -6,6 +6,8 @@
     <title>MTSD SCORE - Sistem Analisis Keputusan Peperiksaan</title>
     <meta name="description" content="Sistem Analisis Keputusan Peperiksaan Maahad Tahfiz Sains Darul Aman (MTSD). Analisis keputusan pelajar, kedudukan, subjek dan aliran secara interaktif.">
     
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1407,6 +1409,8 @@
             </div>
             
             <form id="loginForm" style="display: flex; flex-direction: column; gap: 14px;">
+                <!-- Hidden username field for accessibility / password managers -->
+                <input type="text" name="username" value="admin" autocomplete="username" style="display: none;">
                 <div class="login-input-wrapper">
                     <i data-lucide="lock" class="login-input-icon"></i>
                     <input type="password" id="loginPassword" class="login-input" placeholder="Kata laluan" autocomplete="current-password" required>
